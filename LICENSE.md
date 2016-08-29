@@ -1,6 +1,6 @@
 The MoodleQuiz.jl package is licensed under the Simplified "2-clause" BSD License:
 
-> Copyright (c) 2016: Georg Wechslberger.
+> Copyright (c) 2016: Georg Wechslberger, Karin Tichmann
 >
 > Redistribution and use in source and binary forms, with or without
 > modification, are permitted provided that the following conditions are
