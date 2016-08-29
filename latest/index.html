@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Julia Package for generating Moodle Quiz in Moodle XML format">
+  <meta name="author" content="tauu">
+  
+  <title>MoodleQuiz.jl</title>
+  
+
+  <link rel="shortcut icon" href="./img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="./css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="./css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="./css/highlight.css">
+  <link href="./assets/Documenter.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "None";
+    var mkdocs_page_input_path = "index.md";
+    var mkdocs_page_url = "/";
+  </script>
+  
+  <script src="./js/jquery-2.1.1.min.js"></script>
+  <script src="./js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="./js/highlight.pack.js"></script>
+  <script src="./js/theme.js"></script> 
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <script src="./assets/mathjaxhelper.js"></script>
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="." class="icon icon-home"> MoodleQuiz.jl</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href=".">Home</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#moodlequiz-documentation">MoodleQuiz Documentation</a></li>
+                
+                    <li><a class="toctree-l4" href="#types">Types</a></li>
+                
+                    <li><a class="toctree-l4" href="#functions">Functions</a></li>
+                
+                    <li><a class="toctree-l4" href="#enums">Enums</a></li>
+                
+                    <li><a class="toctree-l4" href="#index">Index</a></li>
+                
+                    <li><a class="toctree-l4" href="#travis-trigger">travis trigger</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href=".">MoodleQuiz.jl</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Home</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/tauu/MoodleQuiz.jl" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a id='MoodleQuiz-Documentation-1'></a></p>
+<h1 id="moodlequiz-documentation">MoodleQuiz Documentation</h1>
+<ul>
+<li><a href=".#MoodleQuiz-Documentation-1">MoodleQuiz Documentation</a><ul>
+<li><a href=".#Types-1">Types</a></li>
+<li><a href=".#Functions-1">Functions</a></li>
+<li><a href=".#Enums-1">Enums</a></li>
+<li><a href=".#Index-1">Index</a></li>
+<li><a href=".#travis-trigger-1">travis trigger</a></li>
+</ul>
+</li>
+</ul>
+<p><a id='Types-1'></a></p>
+<h2 id="types">Types</h2>
+<p>The main type of this module is <code>Quiz</code>, which contains all the information of a Moodle Quiz.</p>
+<p><a id='MoodleQuiz.Quiz' href='#MoodleQuiz.Quiz'>#</a>
+<strong><code>MoodleQuiz.Quiz</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>Quiz(Questions::Vector{Question};Category::AbstractString=&quot;&quot;)
+</code></pre>
+
+<p>Creates a <code>Quiz</code> consisting of the supplied <code>Question</code>s with the given category.</p>
+<p>So essentially a <code>Quiz</code> is just a collection of <code>Question</code>s, which <code>Question</code> defined as follows.</p>
+<p><a id='MoodleQuiz.Question' href='#MoodleQuiz.Question'>#</a>
+<strong><code>MoodleQuiz.Question</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>Question(type; optional arguments)
+</code></pre>
+
+<p>Contstructor for Question type using named parameters</p>
+<p><strong>Arguments</strong></p>
+<ul>
+<li><code>type::QuestionType</code>             : see <code>QustionType</code> for possible options</li>
+<li><code>Name::MoodleText=""</code>            : title of the question</li>
+<li><code>Text::MoodleText=""</code>            : text containing the actual question</li>
+<li><code>GeneralFeedback::MoodleText=""</code> : this text is always shown after the question has been answered</li>
+<li><code>CorrectFeedback::MoodleText="Die Antwort ist richtig."</code> : this text is shown after the question has been answered corectly</li>
+<li><code>PartiallyCorrectFeedback::MoodleText="Die Antwort ist teilweise richtig."</code> : this text is shown after the question has been partially correctly answered.</li>
+<li><code>IncorrectFeedback::MoodleText="Die Antwort ist falsch."</code> : this text is shown if the question has been answered incorrectly</li>
+<li><code>DefaultGrade::Int=1</code>            : not sure ... probably points awarded if the question is answered correctly in the first attempt</li>
+<li><code>Penalty::Float32=1/3</code>           : not sure ... probably the points awarded for a correct answer is calculated by <code>DefaultGrade * Penalty</code> if the student failed to provide the correct answer in the first attempt</li>
+<li><code>Hidden::Int=0</code>                  : not sure ... maybe hidden questions cannot be seen by students?</li>
+<li><code>Single::Bool=true</code>              : not sure ... not idea</li>
+<li><code>ShuffleAnswers::Bool=true</code>      : decides if answers of questions will be randomly shuffled by Moodle</li>
+<li><code>AnswerNumbering::String</code>="none" : decides how answers of questions should be labeled, e.g. 1. 2. ... or a),b) ... Labels are disabled by default.</li>
+<li><code>Answers::Answer=[]</code>             : <code>Answer</code>s for this question</li>
+</ul>
+<p>A <code>Question</code> must have an <code>Array</code> of <code>Answer</code>s.</p>
+<p><a id='MoodleQuiz.Answer' href='#MoodleQuiz.Answer'>#</a>
+<strong><code>MoodleQuiz.Answer</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>Answer(text; optional arguments)
+</code></pre>
+
+<p>Contstructor for Question type using named parameters</p>
+<p><strong>Arguments</strong></p>
+<ul>
+<li><code>Text::MoodleText=""</code>     : text containing the actual question</li>
+<li><code>Correct::Int=1</code>          : shortcut for setting wether this answer is correct or not</li>
+<li><code>Fraction::Int=100</code>       : <code>Fraction * Correct /100 * (DefaultGrade of Question)</code> Points are awarded to the student if this answer is chosen</li>
+<li><code>Feedback::MoodleText=""</code> : this text is always shown after the question has been answered</li>
+</ul>
+<p><a id='Functions-1'></a></p>
+<h2 id="functions">Functions</h2>
+<p><a id='MoodleQuiz.exportXML' href='#MoodleQuiz.exportXML'>#</a>
+<strong><code>MoodleQuiz.exportXML</code></strong> &mdash; <em>Function</em>.</p>
+<pre><code>exportXML(quiz)
+</code></pre>
+
+<p>returns a string with the quiz in Moodle XML format</p>
+<pre><code>exportXML(quiz,filename::AbstractString)
+</code></pre>
+
+<p>writes the quiz in Moodle XML format to the given file</p>
+<p><a id='Enums-1'></a></p>
+<h2 id="enums">Enums</h2>
+<p><a id='MoodleQuiz.QuestionType' href='#MoodleQuiz.QuestionType'>#</a>
+<strong><code>MoodleQuiz.QuestionType</code></strong> &mdash; <em>Type</em>.</p>
+<p>Moodle supports the following types of questions</p>
+<table>
+<thead>
+<tr>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">MultipleChoice</td>
+<td align="left">standard multiple choice question</td>
+</tr>
+<tr>
+<td align="left">AllOrNothingMultipleChoice</td>
+<td align="left">multiple choice question, where all correct and no false answers have to be selected to recieve any points</td>
+</tr>
+<tr>
+<td align="left">TrueFalse</td>
+<td align="left">simple yes / no question</td>
+</tr>
+<tr>
+<td align="left">ShortAnswer</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">Matching</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">Cloze</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">Essay</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">Numerical</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">Description</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">CalculatedSimple</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">DragAndDrop</td>
+<td align="left">not yet implemented</td>
+</tr>
+<tr>
+<td align="left">DragAndDropMatch</td>
+<td align="left">not yet implemented</td>
+</tr>
+</tbody>
+</table>
+<p><a id='MoodleQuiz.MoodleTextFormat' href='#MoodleQuiz.MoodleTextFormat'>#</a>
+<strong><code>MoodleQuiz.MoodleTextFormat</code></strong> &mdash; <em>Type</em>.</p>
+<p>Text in a moodle quiz can have one of the following formats</p>
+<table>
+<thead>
+<tr>
+<th align="left">Format</th>
+<th align="left">Descriction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Html</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">MoodleAutoFormat</td>
+<td align="left">some keywords as e.g. true / false will be automatically translated to the language of the moodle user viewing the quiz</td>
+</tr>
+<tr>
+<td align="left">PlainText</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Markdown</td>
+<td align="left"></td>
+</tr>
+</tbody>
+</table>
+<p><a id='Index-1'></a></p>
+<h2 id="index">Index</h2>
+<ul>
+<li><a href=".#MoodleQuiz.Answer"><code>MoodleQuiz.Answer</code></a></li>
+<li><a href=".#MoodleQuiz.MoodleTextFormat"><code>MoodleQuiz.MoodleTextFormat</code></a></li>
+<li><a href=".#MoodleQuiz.Question"><code>MoodleQuiz.Question</code></a></li>
+<li><a href=".#MoodleQuiz.QuestionType"><code>MoodleQuiz.QuestionType</code></a></li>
+<li><a href=".#MoodleQuiz.Quiz"><code>MoodleQuiz.Quiz</code></a></li>
+<li><a href=".#MoodleQuiz.exportXML"><code>MoodleQuiz.exportXML</code></a></li>
+</ul>
+<p><a id='travis-trigger-1'></a></p>
+<h2 id="travis-trigger">travis trigger</h2>
+<p>test</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/tauu/MoodleQuiz.jl" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+      
+    </span>
+</div>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 0.15.3
+Build Date UTC : 2016-08-29 20:18:32.165792
+-->
