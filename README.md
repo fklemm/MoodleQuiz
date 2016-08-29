@@ -2,6 +2,8 @@
 
 This module facilitates the creation of a Moodle quiz. It provides a `Quiz` data structure corresponding to the Moodle XML format for a quiz as well as functions to export this data structure to said Moodle XML Format.
 
+[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tauu.github.io/MoodleQuiz/latest)
+
 ## Example
 ```julia
 # a simple muliplie choice question
