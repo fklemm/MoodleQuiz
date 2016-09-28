@@ -3,9 +3,12 @@ module MoodleQuiz
 using LightXML
 
 import Base.convert
+import Base.print
+import Base.show
 
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
-export MultipleChoice, TrueFalse, ShortAnswer, Matching, Cloze, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice
+export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice
+export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal
 
 """
 Moodle supports the following types of questions
@@ -17,7 +20,7 @@ Moodle supports the following types of questions
  TrueFalse                   | simple yes / no question
  ShortAnswer                 | not yet implemented
  Matching                    | not yet implemented
- Cloze                       | not yet implemented
+ EmbeddedAnswers             | answer fields / options are embedded in question text
  Essay                       | not yet implemented
  Numerical                   | not yet implemented
  Description                 | not yet implemented
@@ -25,7 +28,7 @@ Moodle supports the following types of questions
  DragAndDrop                 | not yet implemented
  DragAndDropMatch            | not yet implemented
 """
-@enum QuestionType MultipleChoice TrueFalse ShortAnswer Matching Cloze Essay Numerical Description CalculatedSimple DragAndDrop DragAndDropMatch AllOrNothingMultipleChoice
+@enum QuestionType MultipleChoice TrueFalse ShortAnswer Matching EmbeddedAnswers Essay Numerical Description CalculatedSimple DragAndDrop DragAndDropMatch AllOrNothingMultipleChoice
 convert(::Type{AbstractString},x::QuestionType) = (
    get(Dict(
     # MultipleChoice => "multichoice",
@@ -34,7 +37,7 @@ convert(::Type{AbstractString},x::QuestionType) = (
     TrueFalse => "truefalse",
     ShortAnswer => "shortanswer",
     Matching => "matching",
-    Cloze => "cloze",
+    EmbeddedAnswers => "cloze",
     Essay => "essay",
     Numerical => "numerical",
     Description => "description",
@@ -62,6 +65,30 @@ convert(::Type{AbstractString},format::MoodleTextFormat) = (
     PlainText => "plain_text",
     Markdown => "markdown"
     ), format, "")
+)
+
+"""
+An inline answer in a moodle quiz can have one of the following types
+
+ Type                     | Descriction
+ :------------------------| :----------------------------------------------------------------------------------------------------------------------
+ ShortAnswer              | standard text field, case insensitive
+ ShortAnswerCaseSensitive | standard text field, case sensitive
+ NumericalAnswer          | numerical value
+ MultipleChoiceSelect     | select field with multiple options
+ MultipleChoiceVertical   | options represented as a column of radio buttons
+ MultipleChoiceHorizontal | options represented as a row of radio buttons
+"""
+@enum EmbeddedAnswerType ShortAnswerCaseInsensitive ShortAnswerCaseSensitive NumericalAnswer MultipleChoiceSelect MultipleChoiceVertical MultipleChoiceHorizontal
+convert(::Type{AbstractString},itype::EmbeddedAnswerType) = (
+  get(Dict(
+    ShortAnswerCaseInsensitive => "SHORTANSWER",
+    ShortAnswerCaseSensitive => "SHORTANSWER_C",
+    NumericalAnswer => "NUMERICAL",
+    MultipleChoiceSelect => "MULTICHOICE",
+    MultipleChoiceVertical => "MULTICHOICE_V",
+    MultipleChoiceHorizontal => "MULTICHOICE_H"
+    ),itype,"")
 )
 
 """
@@ -148,6 +175,72 @@ function TrueFalseAnswer(TrueFeedback="",FalseFeedback="",TrueIsCorrect=1)
     ];
 end
 
+type EmbeddedAnswerOption
+  Text::AbstractString
+  Fraction::Int
+  Feedback::AbstractString
+end
+"""
+    EmbeddedAnswerOption(text; optional arguments)
+
+Contstructor for an embedded answer option using named parameters
+# Arguments
+* `Text::AbstractString=""`     : text containing the answert option
+* `Correct::Int=1`              : shortcut for setting whether this answer option is correct or not
+* `Fraction::Int=100`           : `Fraction * Correct /100 * (DefaultGrade of Question)` Points are awarded to the student if this answer is chosen
+* `Feedback::AbstractString=""` : text shown to the user has chosen this answer option
+"""
+function EmbeddedAnswerOption(Text;Correct=1,Fraction=100,Feedback="")
+    return EmbeddedAnswerOption(Text,Correct*Fraction,Feedback);
+end
+
+type EmbeddedAnswer
+    Type::EmbeddedAnswerType
+    Grade::Int
+    AnswerOptions::Vector{EmbeddedAnswerOption}
+end
+
+"""
+    EmbeddedAnswer(type; optional arguments)
+
+Contstructor for EmbeddedAnswer type using named parameters
+# Arguments
+* `Type::EmbeddedAnswerType=""`                    : type of this answer field
+* `Grade::Int=1`                                 : weight of this answer
+* `AnswerOptions::Vector{EmbeddedAnswerOption}=[]` : available options for this inline answer
+"""
+function EmbeddedAnswer(Type;Grade=1,AnswerOptions=[])
+    return EmbeddedAnswer(Type,Grade,AnswerOptions);
+end
+
+
+"""
+    NumericalEmbeddedAnswer(value; optional arguments)
+
+Shortcut for constructing an EmbeddedAnswer for a numerical value using named parameters
+# Arguments
+* `Value`                             : correct value for this question
+* `Tolerance`                         : all x with Value - Toleance <= x <= Value + Tolerance will be considered to be correct answers
+* `Grade:Int=1`                       : weight of this answer
+* `Feedback::AbstractString=""`       : feedback shown if the corret answer is given
+"""
+function NumericalEmbeddedAnswer(Value;Grade=1,Tolerance=0.1,Feedback="")
+    return EmbeddedAnswer(NumericalAnswer,Grade,[EmbeddedAnswerOption(string(Value,":",Tolerance);Feedback=Feedback)]);
+end
+
+convert(::Type{AbstractString},ia::EmbeddedAnswer) = string('{',ia.Grade,":",convert(AbstractString,ia.Type),":",convert(AbstractString,ia.AnswerOptions),'}')
+
+convert(::Type{AbstractString},iao::EmbeddedAnswerOption) = (
+  string( "%",iao.Fraction,"%", iao.Text, "#", iao.Feedback)
+)
+
+convert(::Type{AbstractString},iaov::Vector{EmbeddedAnswerOption}) = (
+  join([convert(AbstractString,iao) for iao in iaov],"~")
+)
+
+print(ia::EmbeddedAnswer) = convert(AbstractString,ia)
+show(io::IO,ia::EmbeddedAnswer) = print(io,convert(AbstractString,ia))
+
 """
     Quiz(Questions::Vector{Question};Category::AbstractString="")
 
@@ -228,8 +321,10 @@ function appendXML(q::Question,node,doc)
     appendXML(Answer(MoodleText("false",MoodleAutoFormat)),question,doc);
   end
   # append Answers
-  for answer in q.Answers
-    appendXML(answer,question,doc);
+  if q.Qtype != EmbeddedAnswers
+    for answer in q.Answers
+      appendXML(answer,question,doc);
+    end
   end
 end
 

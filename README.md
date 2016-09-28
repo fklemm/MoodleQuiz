@@ -37,6 +37,18 @@ q3  = Question(MultipleChoice,
 	       ]
       );
 
+# question containing embedded answers
+a1 = EmbeddedAnswer(MultipleChoiceSelect,AnswerOptions=[EmbeddedAnswerOption("Electric",Correct=1),EmbeddedAnswerOption("Grass",Correct=0),EmbeddedAnswerOption("Water",Correct=0)]);
+a2 = EmbeddedAnswer(MultipleChoiceVertical,AnswerOptions=[EmbeddedAnswerOption("not very",Correct=1),EmbeddedAnswerOption("very",Correct=0)]);
+q4 = Question(EmbeddedAnswers,
+			Name="Pokemon",
+			Text="""
+			There are $(NumericalEmbeddedAnswer(151)) 1st gen Pokemon, and $(NumericalEmbeddedAnswer(721)) Pokemon overall.<br>
+			Pikachu is a $a1 type Pokemon.<br>
+			Fire type moves are $a2 effective against water type Pokemon.
+			"""
+);
+
 # create a quiz and export it
 quiz = Quiz([q1, q2, q3]);
 exportXML(quiz,"Space.xml")
@@ -45,4 +57,5 @@ exportXML(quiz,"Space.xml")
 ## Currently Supported Quiz Types
 * Multiple Choice
 * All Or Nothing Multiple Choice
-* Simple Yes/No Questions 
+* Simple Yes/No Questions
+* Embedded Answers
