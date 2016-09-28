@@ -50,7 +50,7 @@ q4 = Question(EmbeddedAnswers,
 );
 
 # create a quiz and export it
-quiz = Quiz([q1, q2, q3]);
+quiz = Quiz([q1, q2, q3, q4]);
 exportXML(quiz,"Space.xml")
 ```
 
