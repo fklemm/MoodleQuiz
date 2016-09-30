@@ -9,6 +9,7 @@ import Base.show
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
 export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice
 export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal
+export MoodleFile, EmbedFile
 
 """
 Moodle supports the following types of questions
@@ -91,6 +92,33 @@ convert(::Type{AbstractString},itype::EmbeddedAnswerType) = (
     ),itype,"")
 )
 
+type MoodleFile
+  Name::AbstractString
+  Path::AbstractString
+  Data::Vector{UInt8}
+end
+
+"""
+    MoodleFile(filename)
+
+generates a file which can be embeded into a `MoodleText`
+"""
+function MoodleFile(filename::AbstractString)
+  if isfile(filename)
+    return MoodleFile(basename(filename), "/", read(filename))
+  else
+    error("File ", filename, " does not exist.")
+  end
+end
+
+"""
+    EmbedFile(mf::MoodleFile,width="100%",height="100%")
+
+Creates the neccessary code to embed a file in to a `MoodleText`. Currently only works for HTML format.
+"""
+EmbedFile(mf::MoodleFile;width="100%",height="100%") =
+  string("<img src=\"@@PLUGINFILE@@/",mf.Name,"\" alt=\"\" width=\"$width\" height=\"$height\" role=\"presentation\" style=\"vertical-align:text-bottom; margin: 0 .5em;\" class=\"img-responsive\">")
+
 """
     MoodleText(string,format=HTML)
 
@@ -99,9 +127,10 @@ generates a text, which can be used for all text fields of a `Question` or `Answ
 type MoodleText
   Text::AbstractString
   Format::MoodleTextFormat
+  Files::Vector{MoodleFile}
 end
 
-convert(::Type{MoodleText},text::AbstractString) = MoodleText(text,HTML)
+convert(::Type{MoodleText},text::AbstractString) = MoodleText(text,HTML,[])
 
 type Answer
   Fraction::Int
@@ -351,6 +380,12 @@ function insertXML(t::MoodleText,node,doc)
   text = new_child(node,"text");
   if t.Format == HTML
     add_cdata(doc,text,t.Text);
+    # add embedded files
+    for file in t.Files
+      child = new_child(node,"file");
+      set_attributes(child,Dict{Any,AbstractString}("name" => file.Name,"path" => file.Path,"encoding" => "base64"));
+      add_text(child,base64encode(file.Data));
+    end
   else
     add_text(text,t.Text);
   end
