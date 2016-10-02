@@ -5,6 +5,7 @@ using LightXML
 import Base.convert
 import Base.print
 import Base.show
+import Base.Random: uuid1, UUID
 
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
 export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice
@@ -105,9 +106,19 @@ generates a file which can be embeded into a `MoodleText`
 """
 function MoodleFile(filename::AbstractString)
   if isfile(filename)
-    return MoodleFile(basename(filename), "/", read(filename))
+    return MoodleFile(basename(filename), "/", read(filename));
   else
-    error("File ", filename, " does not exist.")
+    error("File ", filename, " does not exist.");
+  end
+end
+
+function MoodleFile(plot::Any)
+  if mimewritable("image/png",plot)
+    io = IOBuffer();
+    show(io,MIME("image/png"),plot);
+    return MoodleFile("$(uuid1).png","/",takebuf_array(io));
+  else
+    error("The object does not support printing to a png image.");
   end
 end
 
