@@ -114,9 +114,11 @@ end
 
 function MoodleFile(plot::Any)
   if mimewritable("image/png",plot)
-    io = IOBuffer();
-    show(io,MIME("image/png"),plot);
-    return MoodleFile("$(uuid1).png","/",takebuf_array(io));
+    #io = IOBuffer();
+    #print(io,MIME("image/png"),plot);
+    #data = takebuf_array(io)
+    data = reprmime(MIME("image/png"),plot);
+    return MoodleFile("$(uuid1()).png","/",data);
   else
     error("The object does not support printing to a png image.");
   end

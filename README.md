@@ -49,8 +49,37 @@ q4 = Question(EmbeddedAnswers,
 			"""
 );
 
+# question containing an embedded image
+f1 = MoodleFile("rhp.png");
+a3 = EmbeddedAnswer(MultipleChoiceVertical,AnswerOptions=[EmbeddedAnswerOption("I",Correct=0),EmbeddedAnswerOption("II",Correct=1)]);
+q5 = Question(EmbeddedAnswers,
+					 Name="RHP Identification",
+					 Text=MoodleText("""
+					 Which RHP is shown in this image?<br>
+					 $(EmbedFile(f1;width="250px",height="250px"))
+					 $a3
+					 """,MoodleQuiz.HTML,[f1])
+					 );
+
+# question containing an embedded plot
+using Gadfly # you may use any plot package which supports printing to mime type image/png
+f2 = MoodleFile(plot(x=0+0:0.1:2*pi,y=sin(0:0.1:2*pi),Geom.line));
+# a simple muliplie choice question
+q6 = Question(MultipleChoice,
+	     Name="Trigonometry",
+       Text=MoodleText("""
+			   Which function is depicted in the following figure?<br>
+			   $(EmbedFile(f2;width="250px",height="250px"))
+			   """,MoodleQuiz.HTML,[f2]),
+	     Answers=[
+			 	 Answer("sin",Correct=1),
+				 Answer("cos",Correct=0),
+				 Answer("tan",Correct=0)
+	     ]
+     );
+
 # create a quiz and export it
-quiz = Quiz([q1, q2, q3, q4]);
+quiz = Quiz([q1, q2, q3, q4, q5, q6]);
 exportXML(quiz,"Space.xml")
 ```
 
