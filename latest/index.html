@@ -7,35 +7,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Julia Package for generating Moodle Quiz in Moodle XML format">
   <meta name="author" content="tauu">
-  
-  <title>MoodleQuiz.jl</title>
-  
-
   <link rel="shortcut icon" href="./img/favicon.ico">
-
-  
+  <title>Home - MoodleQuiz.jl</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="./css/theme.css" type="text/css" />
   <link rel="stylesheet" href="./css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="./css/highlight.css">
   <link href="./assets/Documenter.css" rel="stylesheet">
-
   
   <script>
     // Current page data
-    var mkdocs_page_name = "None";
+    var mkdocs_page_name = "Home";
     var mkdocs_page_input_path = "index.md";
     var mkdocs_page_url = "/";
   </script>
   
   <script src="./js/jquery-2.1.1.min.js"></script>
   <script src="./js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="./js/highlight.pack.js"></script>
-  <script src="./js/theme.js"></script> 
-  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-  <script src="./assets/mathjaxhelper.js"></script>
-
+  <script type="text/javascript" src="./js/highlight.pack.js"></script> 
   
 </head>
 
@@ -55,7 +45,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 current">
@@ -104,9 +94,8 @@
     <li>Home</li>
     <li class="wy-breadcrumbs-aside">
       
-        
-          <a href="https://github.com/tauu/MoodleQuiz.jl" class="icon icon-github"> Edit on GitHub</a>
-        
+        <a href="https://github.com/tauu/MoodleQuiz.jl/edit/master/docs/index.md"
+          class="icon icon-github"> Edit on GitHub</a>
       
     </li>
   </ul>
@@ -135,6 +124,7 @@
 </code></pre>
 
 <p>Creates a <code>Quiz</code> consisting of the supplied <code>Question</code>s with the given category.</p>
+<p><a target='_blank' href='https://github.com/tauu/MoodleQuiz/tree/452a99b75e5672d9432219292d185cd74091f432/src/MoodleQuiz.jl#L384-L388' class='documenter-source'>source</a><br></p>
 <p>So essentially a <code>Quiz</code> is just a collection of <code>Question</code>s, which <code>Question</code> defined as follows.</p>
 <p><a id='MoodleQuiz.Question' href='#MoodleQuiz.Question'>#</a>
 <strong><code>MoodleQuiz.Question</code></strong> &mdash; <em>Type</em>.</p>
@@ -159,6 +149,7 @@
 <li><code>AnswerNumbering::String</code>="none" : decides how answers of questions should be labeled, e.g. 1. 2. ... or a),b) ... Labels are disabled by default.</li>
 <li><code>Answers::Answer=[]</code>             : <code>Answer</code>s for this question</li>
 </ul>
+<p><a target='_blank' href='https://github.com/tauu/MoodleQuiz/tree/452a99b75e5672d9432219292d185cd74091f432/src/MoodleQuiz.jl#L172-L190' class='documenter-source'>source</a><br></p>
 <p>A <code>Question</code> must have an <code>Array</code> of <code>Answer</code>s.</p>
 <p><a id='MoodleQuiz.Answer' href='#MoodleQuiz.Answer'>#</a>
 <strong><code>MoodleQuiz.Answer</code></strong> &mdash; <em>Type</em>.</p>
@@ -173,6 +164,7 @@
 <li><code>Fraction::Int=100</code>       : <code>Fraction * Correct /100 * (DefaultGrade of Question)</code> Points are awarded to the student if this answer is chosen</li>
 <li><code>Feedback::MoodleText=""</code> : this text is always shown after the question has been answered</li>
 </ul>
+<p><a target='_blank' href='https://github.com/tauu/MoodleQuiz/tree/452a99b75e5672d9432219292d185cd74091f432/src/MoodleQuiz.jl#L195-L204' class='documenter-source'>source</a><br></p>
 <p><a id='Functions-1'></a></p>
 <h2 id="functions">Functions</h2>
 <p><a id='MoodleQuiz.exportXML' href='#MoodleQuiz.exportXML'>#</a>
@@ -181,10 +173,12 @@
 </code></pre>
 
 <p>returns a string with the quiz in Moodle XML format</p>
+<p><a target='_blank' href='https://github.com/tauu/MoodleQuiz/tree/452a99b75e5672d9432219292d185cd74091f432/src/MoodleQuiz.jl#L420-L424' class='documenter-source'>source</a><br></p>
 <pre><code>exportXML(quiz,filename::AbstractString)
 </code></pre>
 
 <p>writes the quiz in Moodle XML format to the given file</p>
+<p><a target='_blank' href='https://github.com/tauu/MoodleQuiz/tree/452a99b75e5672d9432219292d185cd74091f432/src/MoodleQuiz.jl#L430-L434' class='documenter-source'>source</a><br></p>
 <p><a id='Enums-1'></a></p>
 <h2 id="enums">Enums</h2>
 <p><a id='MoodleQuiz.QuestionType' href='#MoodleQuiz.QuestionType'>#</a>
@@ -248,6 +242,7 @@
 </tr>
 </tbody>
 </table>
+<p><a target='_blank' href='https://github.com/tauu/MoodleQuiz/tree/452a99b75e5672d9432219292d185cd74091f432/src/MoodleQuiz.jl#L16-L33' class='documenter-source'>source</a><br></p>
 <p><a id='MoodleQuiz.MoodleTextFormat' href='#MoodleQuiz.MoodleTextFormat'>#</a>
 <strong><code>MoodleQuiz.MoodleTextFormat</code></strong> &mdash; <em>Type</em>.</p>
 <p>Text in a moodle quiz can have one of the following formats</p>
@@ -277,6 +272,7 @@
 </tr>
 </tbody>
 </table>
+<p><a target='_blank' href='https://github.com/tauu/MoodleQuiz/tree/452a99b75e5672d9432219292d185cd74091f432/src/MoodleQuiz.jl#L53-L62' class='documenter-source'>source</a><br></p>
 <p><a id='Index-1'></a></p>
 <h2 id="index">Index</h2>
 <ul>
@@ -307,10 +303,10 @@
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/tauu/MoodleQuiz.jl" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -319,11 +315,14 @@
       
     </span>
 </div>
+    <script src="./js/theme.js"></script>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="./assets/mathjaxhelper.js"></script>
 
 </body>
 </html>
 
 <!--
-MkDocs version : 0.15.3
-Build Date UTC : 2016-10-04 01:11:32.363735
+MkDocs version : 0.16.0
+Build Date UTC : 2016-11-08 18:50:02
 -->
