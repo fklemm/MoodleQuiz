@@ -10,6 +10,7 @@ import Base.Random: uuid1, UUID
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
 export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice
 export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal
+export MatrixEmbeddedAnswer
 export MoodleFile, EmbedFile
 
 """
@@ -257,17 +258,83 @@ end
 
 
 """
+    roundedStringLength(x,AbsTol)
+rounds x according to the absolute tolerance AbsTol and returns the length of the resulting string
+"""
+function roundedStringLength(x::Real,AbsTol::Real)
+  return round(x,AbsTol |> log10 |> ceil |> abs |> Int) |> string |> length
+end
+
+"""
     NumericalEmbeddedAnswer(value; optional arguments)
 
 Shortcut for constructing an EmbeddedAnswer for a numerical value using named parameters
 # Arguments
-* `Value`                             : correct value for this question
-* `Tolerance`                         : all x with Value - Toleance <= x <= Value + Tolerance will be considered to be correct answers
-* `Grade:Int=1`                       : weight of this answer
-* `Feedback::AbstractString=""`       : feedback shown if the corret answer is given
+* `Value`                        : correct value for this question
+* `Tolerance`                    : all x with Value - Toleance <= x <= Value + Tolerance will be considered to be correct answers
+* `Grade::Int=1`                 : weight of this answer
+* `Feedback::AbstractString=""`  : feedback shown if the corret answer is given
+* `InputSize::Int`             : minimum size of input element
 """
-function NumericalEmbeddedAnswer(Value;Grade=1,Tolerance=0.1,Feedback="")
-    return EmbeddedAnswer(NumericalAnswer,Grade,[EmbeddedAnswerOption(string(Value,":",Tolerance);Feedback=Feedback)]);
+function NumericalEmbeddedAnswer(Value;Grade=1,Tolerance=0.1,Feedback="",InputSize=0)
+  answers = []
+  val = Value;
+  if isa(Value,Rational)
+    # Moodle Version < 1.8 : rational numbers need two seperate answers, the fraction and the float value
+    # Moodle Version => 1.8: rational numbers in numerical answers are not supported
+    #if den(Value) != 1
+    #  push!(answers,EmbeddedAnswerOption(string(num(Value),"/",den(Value));Feedback=Feedback))
+    #end
+    val = float(Value)
+  end
+  # if the toleance settings permit it, we round Value
+  # so that its length is smaller than the size of the input field
+  if val |> string |> length > InputSize
+    if roundedStringLength(val,Tolerance)  <=  InputSize
+      val = round(val,Tolerance |> log10 |> ceil |> abs |> Int)
+    end
+  end
+  push!(answers,EmbeddedAnswerOption(string(val,":",Tolerance);Feedback=Feedback))
+
+  # we can set a minimum size s for the input size
+  # by adding a false answer with s digits
+  if InputSize > 0
+    k = 1;
+    if Value == 10^(InputSize - 1)
+      k = 2;
+    end
+    push!(answers,EmbeddedAnswerOption(string(k * 10^(InputSize-1),":",Tolerance);Correct=0))
+  end
+  return EmbeddedAnswer(NumericalAnswer,Grade,answers);
+end
+
+type MatrixEmbeddedAnswer
+    A::AbstractMatrix
+    Grade::Int
+    Tolerance::Float64
+    Feedback::AbstractString
+    InputSize::Int
+    Name::AbstractString
+end
+
+"""
+    MatrixEmbeddedAnswer(A; optional arguments)
+
+Contstructor for MatrixEmbeddedAnswer type using named parameters
+# Arguments
+* `A::AbstractMatrix`                 : answer matrix
+* `Grade::Int=1`                      : weight of this answer
+* `Tolerance`                         : all x with Value - Toleance <= x <= Value + Tolerance will be considered to be correct answers
+* `Feedback::AbstractString=""`       : feedback shown if the corret answer is given
+* `InputSize::Int`                    : (optional) minimum size of input element; if none is set, the matrix elements are rounded according to the tolerance and the length of the longest resulting number is used
+* `Name::AbstractString`              : name of the matrix, this adds "name = " infront of the matrix input
+"""
+function MatrixEmbeddedAnswer(A;Grade=1,Tolerance=0.1,Feedback="",InputSize=0,Name="")
+  is = InputSize;
+  if InputSize == 0
+    is = map( x -> roundedStringLength(x,Tolerance),  A[:]) |> maximum
+  end
+  return MatrixEmbeddedAnswer(A,Grade,Tolerance,Feedback,is,Name);
 end
 
 convert(::Type{AbstractString},ia::EmbeddedAnswer) = string('{',ia.Grade,":",convert(AbstractString,ia.Type),":",convert(AbstractString,ia.AnswerOptions),'}')
@@ -280,8 +347,39 @@ convert(::Type{AbstractString},iaov::Vector{EmbeddedAnswerOption}) = (
   join([convert(AbstractString,iao) for iao in iaov],"~")
 )
 
+function convert(::Type{AbstractString},mea::MatrixEmbeddedAnswer)
+  (m,n) = size(mea.A);
+  noBorderStyle = "border: 0px;"
+  bracketStyle = "style=\"line-height:100%; font-size:$(2*m+1)em; vertical-align:top; height:100%; padding:0; $(noBorderStyle)\""
+  res = "<table style=\"width:auto; vertical-align:middle; display:inline-block; $(noBorderStyle)\">\n"
+  for i=1:m
+    res = string(res,"<tr>\n")
+    padding = "style=\"padding: 0 0 0 0; $(noBorderStyle)\""
+    if i==1
+        res = string(res,"<td $bracketStyle rowspan=\"$m\">(</td>")
+        padding="style=\"padding: 10px 0 0 0; $(noBorderStyle)\""
+    end
+    for j=1:n
+        res = string(res,"<td $padding>",NumericalEmbeddedAnswer(mea.A[i,j],Grade=mea.Grade,Tolerance=mea.Tolerance,Feedback=mea.Feedback,InputSize=mea.InputSize),"</td>")
+    end
+    if i==1
+        res = string(res,"<td $bracketStyle rowspan=\"$m\">)</td>")
+    end
+    res = string(res,"\n</tr>\n")
+  end
+  res = string(res,"</table>\n")
+  # add "Name = " infront of the matrix
+  if mea.Name != ""
+    res = string("<span style=\"white-space: nowrap;\">\$",mea.Name,"\$ = ",res,"</span>")
+  end
+  return res
+end
+
 print(ia::EmbeddedAnswer) = convert(AbstractString,ia)
 show(io::IO,ia::EmbeddedAnswer) = print(io,convert(AbstractString,ia))
+
+print(mea::MatrixEmbeddedAnswer) = convert(AbstractString,mea)
+show(io::IO,mea::MatrixEmbeddedAnswer) = print(io,convert(AbstractString,mea))
 
 """
     Quiz(Questions::Vector{Question};Category::AbstractString="")
