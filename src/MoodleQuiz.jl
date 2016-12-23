@@ -9,7 +9,7 @@ import Base.Random: uuid1, UUID
 
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
 export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice
-export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal
+export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, TrueFalseEmbeddedAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal
 export MatrixEmbeddedAnswer
 export MoodleFile, EmbedFile
 
@@ -142,6 +142,8 @@ type MoodleText
   Text::AbstractString
   Format::MoodleTextFormat
   Files::Vector{MoodleFile}
+  MoodleText(Text::AbstractString, Format::MoodleTextFormat, Files::Any) = new(Text,Format,Files)
+  MoodleText(Text::AbstractString, Format::MoodleTextFormat) = new(Text,Format, Vector{MoodleFile}())
 end
 
 convert(::Type{MoodleText},text::AbstractString) = MoodleText(text,HTML,[])
@@ -306,6 +308,30 @@ function NumericalEmbeddedAnswer(Value;Grade=1,Tolerance=0.1,Feedback="",InputSi
     push!(answers,EmbeddedAnswerOption(string(k * 10^(InputSize-1),":",Tolerance);Correct=0))
   end
   return EmbeddedAnswer(NumericalAnswer,Grade,answers);
+end
+
+"""
+TrueFalseEmbeddedAnswer(value; optional arguments)
+
+Shortcut for constructing an EmbeddedAnswer for a numerical value using named parameters
+# Arguments
+* `Value::Bool`                                         : correct value for this question (true or false)
+* `Feedback::Array{AbstractString}|AbstractString=""`   : Array of Feedbacks if respective
+                                                          (1: choice (!) "true", 2: choice "false") choice is made;
+                                                          if only one String, in both cases same Feedbasck
+* `AnsNames::Array{AbstractString}=["True","False"]`    : answers to be shown in selection
+"""
+function TrueFalseEmbeddedAnswer(Value::Bool; Grade=1,Feedback="",AnsNames=["True","False"])
+  answers = []
+
+  # if Feedback is not an array, always give the same Feedback to both true and false answer
+  if  isa(Feedback,AbstractString)
+    Feedback =  [Feedback, Feedback]
+  end
+
+  push!(answers,EmbeddedAnswerOption(AnsNames[1];Correct=Int(Value), Feedback=Feedback[1]))
+  push!(answers,EmbeddedAnswerOption(AnsNames[2];Correct=Int(!Value), Feedback=Feedback[2]))
+  return EmbeddedAnswer(MultipleChoiceHorizontal,Grade,answers);
 end
 
 type MatrixEmbeddedAnswer
