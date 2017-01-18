@@ -289,26 +289,43 @@ function NumericalEmbeddedAnswer(Value;Grade=1,Tolerance=0.1,Feedback="",InputSi
     #  push!(answers,EmbeddedAnswerOption(string(num(Value),"/",den(Value));Feedback=Feedback))
     #end
     val = float(Value)
-  end
-  # if the toleance settings permit it, we round Value
-  # so that its length is smaller than the size of the input field
-  if val |> string |> length > InputSize
-    if roundedStringLength(val,Tolerance)  <=  InputSize
-      val = round(val,Tolerance |> log10 |> ceil |> abs |> Int)
-    end
-  end
-  push!(answers,EmbeddedAnswerOption(string(val,":",Tolerance);Feedback=Feedback))
 
-  # we can set a minimum size s for the input size
-  # by adding a false answer with s digits
-  if InputSize > 0
-    k = 1;
-    if Value == 10^(InputSize - 1)
-      k = 2;
-    end
-    push!(answers,EmbeddedAnswerOption(string(k * 10^(InputSize-1),":",Tolerance);Correct=0))
   end
-  return EmbeddedAnswer(NumericalAnswer,Grade,answers);
+  if !isnan(val) && !isinf(val)
+	  # if the toleance settings permit it, we round Value
+	  # so that its length is smaller than the size of the input field
+	  if val |> string |> length > InputSize
+		if roundedStringLength(val,Tolerance)  <=  InputSize
+		  val = round(val,Tolerance |> log10 |> ceil |> abs |> Int)
+		end
+	  end
+	  push!(answers,EmbeddedAnswerOption(string(val,":",Tolerance);Feedback=Feedback))
+	  # we can set a minimum size s for the input size
+	  # by adding a false answer with s digits
+	  if InputSize > 0
+		k = 1;
+		if Value == 10^(InputSize - 1)
+		  k = 2;
+		end
+		push!(answers,EmbeddedAnswerOption(string(k * 10^(InputSize-1),":",Tolerance);Correct=0))
+	  end
+	  return EmbeddedAnswer(NumericalAnswer,Grade,answers);
+   else
+      if isnan(val)
+	   push!(answers,EmbeddedAnswerOption("nan";Feedback=Feedback));
+     else
+		  push!(answers,EmbeddedAnswerOption(( (val<0)?"-":"" )*"Inf";Feedback=Feedback));
+      # Note: Moodle changes box size to longest answer, which might be revealing - so in case longer answers are allowed, one must adapt the dummy numerical answer,
+      # which makes "all" boxes in a matrix unpleasently bigger...
+		  #push!(answers,EmbeddedAnswerOption(( (val<0)?"-":"" )*"unendlich";Feedback=Feedback));
+		  #push!(answers,EmbeddedAnswerOption(( (val<0)?"-":"" )*"infinity";Feedback=Feedback));
+		  #push!(answers,EmbeddedAnswerOption(( (val<0)?"-":"" )*"\\infty";Feedback=Feedback));
+		  #push!(answers,EmbeddedAnswerOption(( (val<0)?"-":"" )*"\\infinity";Feedback=Feedback));
+	  end
+	  return EmbeddedAnswer(ShortAnswerCaseInsensitive,Grade,answers);
+   end
+
+
 end
 
 """
