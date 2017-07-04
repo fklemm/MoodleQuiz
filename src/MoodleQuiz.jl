@@ -1,4 +1,3 @@
-__precompile__()
 module MoodleQuiz
 
 using LightXML
@@ -9,10 +8,12 @@ import Base.show
 import Base.Random: uuid1, UUID
 
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
-export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice
+export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice, Stack
 export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, TrueFalseEmbeddedAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal
 export MatrixEmbeddedAnswer
 export MoodleFile, EmbedFile
+export StackInput, StackAnswerTest, PRTree, PRTNode, EmbedInput
+export StackInputType, AlgebraicInput, CheckboxInput, DropdownInput, CharacterInput, MatrixInput, RadioButtonInput, TextBoxInput, UnitsInput, TrueFalseInput
 
 """
 Moodle supports the following types of questions
@@ -31,10 +32,11 @@ Moodle supports the following types of questions
  CalculatedSimple            | not yet implemented
  DragAndDrop                 | not yet implemented
  DragAndDropMatch            | not yet implemented
+ Stack                       | Uses the Maxima CAS engine to check algebraic correctness of solution
 """
-@enum QuestionType MultipleChoice TrueFalse ShortAnswer Matching EmbeddedAnswers Essay Numerical Description CalculatedSimple DragAndDrop DragAndDropMatch AllOrNothingMultipleChoice
+@enum QuestionType MultipleChoice TrueFalse ShortAnswer Matching EmbeddedAnswers Essay Numerical Description CalculatedSimple DragAndDrop DragAndDropMatch AllOrNothingMultipleChoice Stack
 convert(::Type{AbstractString},x::QuestionType) = (
-   get(Dict(
+   Dict(
     # MultipleChoice => "multichoice",
     MultipleChoice => "oumultiresponse",
     AllOrNothingMultipleChoice => "multichoiceset",
@@ -47,8 +49,9 @@ convert(::Type{AbstractString},x::QuestionType) = (
     Description => "description",
     CalculatedSimple => "calculatedsimple",
     DragAndDrop => "ddimageortext",
-    DragAndDropMatch => "ddmatch"
-  ),x,"")
+    DragAndDropMatch => "ddmatch",
+    Stack => "stack"
+  )[x]
 )
 
 """
@@ -93,6 +96,21 @@ convert(::Type{AbstractString},itype::EmbeddedAnswerType) = (
     MultipleChoiceVertical => "MULTICHOICE_V",
     MultipleChoiceHorizontal => "MULTICHOICE_H"
     ),itype,"")
+)
+
+"""
+The check for correctness in Stack Questions can be any of the following
+  Type    | Description
+  ---------------
+  AlgebraicEquivalence | Algebraic Equivalence (using simplifications)
+
+  Others not yet implemented
+"""
+@enum StackAnswerTest AlgebraicEquivalence
+convert(::Type{AbstractString}, x::StackAnswerTest) = (
+  get(Dict(
+    AlgebraicEquivalence => "AlgEquiv"
+  ), x)
 )
 
 type MoodleFile
@@ -149,11 +167,130 @@ end
 
 convert(::Type{MoodleText},text::AbstractString) = MoodleText(text,HTML,[])
 
+@enum StackInputType AlgebraicInput CheckboxInput DropdownInput CharacterInput MatrixInput RadioButtonInput TextBoxInput UnitsInput TrueFalseInput
+type StackInput
+  Type::StackInputType
+  Name::AbstractString
+  TrueAnswer::AbstractString
+  BoxSize::Int
+  StrictSyntax::Int
+  InsertStars::Int
+  SyntaxHint::AbstractString
+  SyntaxAttribute::Int
+  ForbidWords::AbstractString
+  AllowWords::AbstractString
+  ForbidFloat::Int
+  RequireLowestTerms::Int
+  CheckAnswerType::Int
+  MustVerify::Int
+  ShowValidation::Int
+  Options::AbstractString
+end
+
+"""
+    StackInput(type; optional arguments)
+
+Contstructor for StackInput type using named parameters.
+# Arguments
+* `Type::StackInputType`           : The type of the input
+* `Name::AbstractString`           : The Name of the input, used to embed the Input
+* `TrueAnswer::AbstractString`     : A true answer, shown if the student guesses a wrong answer
+* `BoxSize::Int=100`               : The width of the input box
+* `StrictSyntax::Int=1`            : Whether strict Maxima syntax should be enforced
+* `InsertStars::Int=0`             : Whether to insert stars for multiplication
+* `SyntaxHint::AbstractString=""`  : A hint that is shown when the box is left empty
+* `SyntaxAttribute::Int=0`         : 0 means Syntax hint is editable; 1 means Syntax hint is a placeholder
+* `ForbidWords::AbstractString=""` : Words that are forbidden in the answer (comma separated)
+* `AllowWords::AbstractString=""`  : Words that are allowed in the answer (comma separated)
+* `ForbidFloat::Int=1`             : Whether Floats are forbidden
+* `RequireLowestTerms::Int=0`      : Whether Fractions need to be fully cancelled
+* `CheckAnswerType::Int=0`         : Whether to check the type of the answer (Equation, Matrix, List, …)
+* `MustVerify::Int=1`              : Whether the student needs to verify that Maxima understood their solution
+* `ShowValidation::Int=1`          : 0: don‘t show, 1: Show, 2: Show without variable list
+* `Options::AbstractString=""`     : Maths formatting options – Not yet implemented
+"""
+function StackInput(Type::StackInputType, Name::AbstractString, TrueAnswer::AbstractString; BoxSize::Int=100, StrictSyntax::Int=1, InsertStars::Int=0, SyntaxHint::AbstractString="", SyntaxAttribute::Int=0, ForbidWords::AbstractString="", AllowWords::AbstractString="", ForbidFloat::Int=1, RequireLowestTerms::Int=0, CheckAnswerType::Int=0, MustVerify::Int=1, ShowValidation::Int=1, Options::AbstractString="")
+  return StackInput(Type, Name, TrueAnswer, BoxSize, StrictSyntax, InsertStars, SyntaxHint, SyntaxAttribute, ForbidWords, AllowWords, ForbidFloat, RequireLowestTerms, CheckAnswerType, MustVerify, ShowValidation, Options)
+end
+
+function convert(::Type{AbstractString}, x::StackInputType)
+  return Dict(
+    AlgebraicInput => "algebraic",
+  )[x] 
+end
+
+function EmbedInput(x::StackInput)
+  return string("<p>[[input:", x.Name, "]] [[validation:", x.Name, "]]</p>")
+end
+
 type Answer
   Fraction::Int
   Text::MoodleText
   Feedback::MoodleText
 end
+
+type PRTNode
+  Name::AbstractString
+  AnswerTest::StackAnswerTest
+  EvaluatedInput::StackInput
+  Answer::AbstractString
+  TrueScore::Float32
+  FalseScore::Float32
+  TrueNextNode::Nullable{PRTNode}
+  FalseNextNode::Nullable{PRTNode}
+  TrueFeedback::MoodleText
+  FalseFeedback::MoodleText
+end
+
+"""
+  PRTNode(EvaluatedInput, Answer; optional arguments)
+
+Constructor for a Potential Response Tree Node, used by stack questions
+# Arguments
+* `EvaluatedInput::AbstractString`                      : The `StackInput` that is evaluated
+* `Answer::AbstractString`                              : The answer that the Input is compared against
+* `Name::AbstractString=""`                             : The Name of the Node
+* `AnswerTest::StackAnswerTest=AlgebraicEquivalence`    : The method of comparing the Input against the correct Answer
+* `TrueScore::Float32=1.0`                              : The question score if this node evaluates to `true`
+* `FalseScore::Float32=0.0`                             : The question score if this node evaluates to `frue`
+* `TrueNextNode::Nullable{PRTNode}=NULL`                : The next node if this node evaluates to `true`, null if the tree should terminate
+* `FalseNextNode::Nullable{PRTNode}=NULL`               : The next node if this node evaluates to `false`, null if the tree should terminate
+* `TrueFeedback::MoodleText=""`                         : Additional Feedback if this node evaluates to `true`
+* `FalseFeedback::MoodleText=""`                        : Additional Feedback if this node evaluates to `false`
+"""
+function PRTNode(EvaluatedInput, Answer; Name="", AnswerTest=AlgebraicEquivalence, TrueScore=1.0, FalseScore=0.0, TrueNextNode=Nullable{PRTNode}(), FalseNextNode=Nullable{PRTNode}(), TrueFeedback=MoodleText(""), FalseFeedback=MoodleText(""))
+  return PRTNode(Name, AnswerTest, EvaluatedInput, Answer, TrueScore, FalseScore, TrueNextNode, FalseNextNode, TrueFeedback, FalseFeedback)
+end
+
+type PRTree
+  Nodes::Vector{PRTNode}
+  Name::AbstractString
+  Value::Float32
+  AutoSimplify::Int
+end
+
+"""
+  PRTree(Nodes; optional arguments)
+
+Constructor for a Potential Response Tree, used by stack questions
+# Arguments
+* `Nodes::Vector{PRTNode}` : Nodes of the tree
+* `Name::AbstractString="prt1"`          : Name of the tree
+* `Value::Float32=1.0`                   : Value of the tree
+* `AutoSimplify::Int=1`                  : Whether entered values should be algebraically simplified
+"""
+function PRTree(Nodes; Name="prt1", Value=1.0, AutoSimplify=1)
+  # Assert all Nodes have distinct names
+""  # Otherwise enumerate the nodes
+  Names = Set(node.Name for node in Nodes)
+  if length(Names) != length(Nodes)
+    for (i, node) in enumerate(Nodes)
+      node.Name = string(i)
+    end
+  end
+  return PRTree(Nodes, Name, Value, AutoSimplify)
+end
+
 
 type Question
   Qtype::QuestionType
@@ -170,6 +307,8 @@ type Question
   ShuffleAnswers::Bool
   AnswerNumbering::AbstractString
   Answers::Vector{Answer}
+  Inputs::Vector{StackInput}
+  ProblemResponseTree::Nullable{PRTree}
 end
 
 """
@@ -191,8 +330,8 @@ Contstructor for Question type using named parameters
 * `AnswerNumbering::String`="none" : decides how answers of questions should be labeled, e.g. 1. 2. ... or a),b) ... Labels are disabled by default.
 * `Answers::Answer=[]`             : `Answer`s for this question
 """
-function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.", IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,Single=true,ShuffleAnswers=true,AnswerNumbering="none",Answers=[])
-  return Question(qtype,Name,Text,GeneralFeedback,CorrectFeedback,PartiallyCorrectFeedback,IncorrectFeedback,Penalty,DefaultGrade,Hidden,Single,ShuffleAnswers,AnswerNumbering,Answers)
+function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.", IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,Single=true,ShuffleAnswers=true,AnswerNumbering="none",Answers=[],Inputs=[], ProblemResponseTree=Nullable{PRTree}())
+  return Question(qtype,Name,Text,GeneralFeedback,CorrectFeedback,PartiallyCorrectFeedback,IncorrectFeedback,Penalty,DefaultGrade,Hidden,Single,ShuffleAnswers,AnswerNumbering,Answers,Inputs,ProblemResponseTree)
 end
 
 """
@@ -364,12 +503,12 @@ end
 """
     MatrixEmbeddedAnswer(A; optional arguments)
 
-Contstructor for MatrixEmbeddedAnswer type using named parameters
+Constructor for MatrixEmbeddedAnswer type using named parameters
 # Arguments
 * `A::AbstractMatrix`                 : answer matrix
 * `Grade::Int=1`                      : weight of this answer
 * `Tolerance`                         : all x with Value - Toleance <= x <= Value + Tolerance will be considered to be correct answers
-* `Feedback::AbstractString=""`       : feedback shown if the corret answer is given
+* `Feedback::AbstractString=""`       : feedback shown if the correct answer is given
 * `InputSize::Int`                    : (optional) minimum size of input element; if none is set, the matrix elements are rounded according to the tolerance and the length of the longest resulting number is used
 * `Name::AbstractString`              : name of the matrix, this adds "name = " infront of the matrix input
 """
@@ -380,6 +519,7 @@ function MatrixEmbeddedAnswer(A;Grade=1,Tolerance=0.1,Feedback="",InputSize=0,Na
   end
   return MatrixEmbeddedAnswer(A,Grade,Tolerance,Feedback,is,Name);
 end
+
 
 convert(::Type{AbstractString},ia::EmbeddedAnswer) = string('{',ia.Grade,":",convert(AbstractString,ia.Type),":",convert(AbstractString,ia.AnswerOptions),'}')
 
@@ -480,6 +620,9 @@ function exportXML(q::Quiz,filename)
   save_file(buildXML(q),filename);
 end
 
+##### TODO #####
+# - Parse PRT
+
 # Append a question to a XML document
 function appendXML(q::Question,node,doc)
   # add a question node
@@ -491,23 +634,37 @@ function appendXML(q::Question,node,doc)
   appendXML(q.Penalty,question,"penalty",doc);
   appendXML(q.DefaultGrade,question,"defaultgrade",doc);
   appendXML(q.Hidden,question,"hidden",doc);
-  appendXML(q.Single,question,"single",doc);
-  appendXML(q.ShuffleAnswers,question,"shuffleanswers",doc);
-  appendXML(q.AnswerNumbering,question,"answernumbering",doc);
-  new_child(question,"shownumcorrect");
+  if q.Qtype != Stack
+    appendXML(q.Single,question,"single",doc);
+    appendXML(q.ShuffleAnswers,question,"shuffleanswers",doc);
+    appendXML(q.AnswerNumbering,question,"answernumbering",doc);
+    new_child(question,"shownumcorrect");
+    appendXML(q.CorrectFeedback,question,"correctfeedback",doc);
+    appendXML(q.PartiallyCorrectFeedback,question,"partiallycorrectfeedback",doc);
+    appendXML(q.IncorrectFeedback,question,"incorrectfeedback",doc);
+  else
+    appendXML(q.CorrectFeedback,question,"prtcorrect",doc)
+    appendXML(q.PartiallyCorrectFeedback,question,"prtpartiallycorrect",doc)
+    appendXML(q.IncorrectFeedback,question,"prtincorrect",doc)
+  end
   appendXML(q.GeneralFeedback,question,"generalfeedback",doc);
-  appendXML(q.CorrectFeedback,question,"correctfeedback",doc);
-  appendXML(q.PartiallyCorrectFeedback,question,"partiallycorrectfeedback",doc);
-  appendXML(q.IncorrectFeedback,question,"incorrectfeedback",doc);
 
   if q.Qtype == TrueFalse
     appendXML(Answer(MoodleText("true",MoodleAutoFormat)),question,doc);
     appendXML(Answer(MoodleText("false",MoodleAutoFormat)),question,doc);
   end
   # append Answers
-  if q.Qtype != EmbeddedAnswers
+  if q.Qtype != EmbeddedAnswers && q.Qtype != Stack
     for answer in q.Answers
       appendXML(answer,question,doc);
+    end
+  end
+  if q.Qtype == Stack 
+    for i in q.Inputs
+      appendXML(i, question, doc)
+    end
+    if !isnull(q.ProblemResponseTree)
+      appendXML(q.ProblemResponseTree.value, question, doc)
     end
   end
 end
@@ -570,6 +727,60 @@ function appendXML(x::Bool,node,TagName::AbstractString,doc)
   else
     appendXML("false",node,TagName,doc)
   end
+end
+
+function appendXML(input::StackInput, node, doc)
+  input_node = new_child(node, "input")
+  appendXML(input.Name, input_node, "name", doc)
+  appendXML(AbstractString(input.Type), input_node, "type", doc) 
+  appendXML(input.TrueAnswer, input_node, "tans", doc)
+  appendXML(input.BoxSize, input_node, "boxsize", doc)
+  appendXML(input.StrictSyntax, input_node, "strictsyntax", doc)
+  appendXML(input.InsertStars, input_node, "insertstars", doc)
+  appendXML(input.SyntaxHint, input_node, "syntaxhint", doc)
+  appendXML(input.SyntaxAttribute, input_node, "syntaxattribute", doc)
+  appendXML(input.ForbidWords, input_node, "forbidwords", doc)
+  appendXML(input.AllowWords, input_node, "allowwords", doc)
+  appendXML(input.ForbidFloat, input_node, "forbidfloat", doc)
+  appendXML(input.RequireLowestTerms, input_node, "requirelowestterms", doc)
+  appendXML(input.CheckAnswerType, input_node, "checkanswertype", doc)
+  appendXML(input.MustVerify, input_node, "mustverify", doc)
+  appendXML(input.ShowValidation, input_node, "showvalidation", doc)
+  appendXML(input.Options, input_node, "options", doc)end
+
+function appendXML(prt::PRTree, node, doc)
+  tree_node = new_child(node, "prt")
+  # Append Tree Information
+  appendXML(prt.Name, tree_node, "name", doc)
+  appendXML(prt.Value, tree_node, "value", doc)
+  appendXML(prt.AutoSimplify, tree_node, "autosimplif", doc)
+  for prtnode in prt.Nodes
+    appendXML(prtnode, tree_node, doc) 
+  end
+end
+
+function appendXML(prtnode::PRTNode, node, doc)
+  xml = new_child(node, "node")
+  appendXML(prtnode.Name, xml, "name", doc)
+  appendXML(string(prtnode.AnswerTest), xml, "name", doc)
+  appendXML(prtnode.EvaluatedInput.Name, xml, "sans", doc)
+  appendXML(prtnode.Answer, xml, "tans", doc)
+  
+  appendXML(prtnode.TrueScore, xml, "truescore", doc)
+  if isnull(prtnode.TrueNextNode)
+    appendXML(-1, xml, "truenextnode", doc)
+  else
+    appendXML(prtnode.TrueNextNode.value.Name, xml, "truenextnode", doc)
+  end
+  appendXML(prtnode.TrueFeedback, xml, "truefeedback", doc)
+
+  appendXML(prtnode.FalseScore, xml, "falsescore", doc)
+  if isnull(prtnode.FalseNextNode)
+    appendXML(-1, xml, "falsenextnode", doc)
+  else
+    appendXML(prtnode.FalseNextNode.value.Name, xml, "falsenextnode", doc)
+  end
+  appendXML(prtnode.FalseFeedback, xml, "falsefeedback", doc)
 end
 
 " string input for avoiding the need to escape \\ "
