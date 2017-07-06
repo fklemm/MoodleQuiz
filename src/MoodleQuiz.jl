@@ -104,12 +104,41 @@ The check for correctness in Stack Questions can be any of the following
   ---------------
   AlgebraicEquivalence | Algebraic Equivalence (using simplifications)
 
-  Others not yet implemented
+  Others are not tested or understood!
 """
-@enum StackAnswerTest AlgebraicEquivalence
+@enum StackAnswerTest AlgebraicEquivalenceCasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEqiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict 
 function convert(::Type{AbstractString}, x::StackAnswerTest)
   Dict(
-    AlgebraicEquivalence => "AlgEquiv"
+    AlgebraicEquivalence => "AlgEquiv",
+    CasEqual => "CasEqual",
+    CompSquare => "CompSquare",
+    Diff => "Diff",
+    EqualComAss => "EqualComAss",
+    Expanded => "Expanded",
+    FacForm => "FacForm",
+    IntEquiv => "Int",
+    LowestTerms => "LowestTerms",
+    GT => "GT",
+    GTE => "GTE",
+    NumAbsolute => "NumAbsolute",
+    NumDecPlaces => "NumDecPlaces",
+    NumRelative => "NumRelative",
+    NumSigFigs => "NumSigFigs",
+    PartFrac => "PartFrac",
+    RegExp => "RegExp",
+    SameType => "SameType",
+    SigFigsStrict => "SigFigsStrict",
+    SingleFrac => "SingleFrac",
+    StringEquiv => "String",
+    StringSloppy => "StringSloppy",
+    SubstEquiv => "SubstEquiv",
+    SysEquiv => "SysEquiv",
+    UnitsAbsolute => "UnitsAbsolute",
+    UnitsRelative => "UnitsRelative",
+    Units => "Units",
+    UnitsStrictAbsolute => "UnitsStrictAbsolute",
+    UnitsStrictRelative => "UnitsStrictRelative",
+    UnitsStrict => "UnitsStrict",
   )[x]
 end
 
