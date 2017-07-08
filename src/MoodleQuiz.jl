@@ -258,11 +258,8 @@ type Answer
   Feedback::MoodleText
 end
 
-# Forward declaration
-abstract type AbstractPRTree end
-
 type PRTNode
-  Tree::AbstractPRTree
+  Tree::Any
   Name::AbstractString
   AnswerTest::StackAnswerTest
   EvaluatedInput::StackInput
@@ -297,7 +294,7 @@ function PRTNode(Tree, EvaluatedInput, Answer; Name="", AnswerTest=AlgebraicEqui
   return this
 end
 
-type PRTree <: AbstractPRTree
+type PRTree
   Nodes::Vector{PRTNode}
   Name::AbstractString
   Value::Float32
