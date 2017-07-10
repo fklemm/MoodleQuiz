@@ -95,8 +95,22 @@ q7 = Question(EmbeddedAnswers,
 					"""
 		 )
 
+# Stack Questions
+input = StackInput(AlgebraicInput, "ans1", "{2, 3}", SyntaxHint="{1, 2}", SyntaxAttribute=1)
+tree = PRTree()
+node1 = PRTNode(tree, input, "{2, 3}")
+node2 = PRTNode(tree, input, "{2, 5}")
+node3 = PRTNode(tree, input, "{2, 3}")
+node1.FalseNextNode = node2
+node2.FalseNextNode = node3
+
+q8 = Question(Stack, Name="Prime Numbers",
+    Text="List two prime numbers smaller than 6. $(EmbedInput(input))",
+    Inputs = [input],
+    ProblemResponseTree=tree)
+
 # create a quiz and export it
-quiz = Quiz([q1, q2, q3, q4, q5, q6, q7]);
+quiz = Quiz([q1, q2, q3, q4, q5, q6, q7, q8]);
 exportXML(quiz,"Space.xml")
 ```
 

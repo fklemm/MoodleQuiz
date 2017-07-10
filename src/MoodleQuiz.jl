@@ -104,14 +104,43 @@ The check for correctness in Stack Questions can be any of the following
   ---------------
   AlgebraicEquivalence | Algebraic Equivalence (using simplifications)
 
-  Others not yet implemented
+  Others are not tested or understood!
 """
-@enum StackAnswerTest AlgebraicEquivalence
-convert(::Type{AbstractString}, x::StackAnswerTest) = (
-  get(Dict(
-    AlgebraicEquivalence => "AlgEquiv"
-  ), x)
-)
+@enum StackAnswerTest AlgebraicEquivalenceCasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEqiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict 
+function convert(::Type{AbstractString}, x::StackAnswerTest)
+  Dict(
+    AlgebraicEquivalence => "AlgEquiv",
+    CasEqual => "CasEqual",
+    CompSquare => "CompSquare",
+    Diff => "Diff",
+    EqualComAss => "EqualComAss",
+    Expanded => "Expanded",
+    FacForm => "FacForm",
+    IntEquiv => "Int",
+    LowestTerms => "LowestTerms",
+    GT => "GT",
+    GTE => "GTE",
+    NumAbsolute => "NumAbsolute",
+    NumDecPlaces => "NumDecPlaces",
+    NumRelative => "NumRelative",
+    NumSigFigs => "NumSigFigs",
+    PartFrac => "PartFrac",
+    RegExp => "RegExp",
+    SameType => "SameType",
+    SigFigsStrict => "SigFigsStrict",
+    SingleFrac => "SingleFrac",
+    StringEquiv => "String",
+    StringSloppy => "StringSloppy",
+    SubstEquiv => "SubstEquiv",
+    SysEquiv => "SysEquiv",
+    UnitsAbsolute => "UnitsAbsolute",
+    UnitsRelative => "UnitsRelative",
+    Units => "Units",
+    UnitsStrictAbsolute => "UnitsStrictAbsolute",
+    UnitsStrictRelative => "UnitsStrictRelative",
+    UnitsStrict => "UnitsStrict",
+  )[x]
+end
 
 type MoodleFile
   Name::AbstractString
@@ -230,6 +259,7 @@ type Answer
 end
 
 type PRTNode
+  Tree::Any
   Name::AbstractString
   AnswerTest::StackAnswerTest
   EvaluatedInput::StackInput
@@ -258,8 +288,10 @@ Constructor for a Potential Response Tree Node, used by stack questions
 * `TrueFeedback::MoodleText=""`                         : Additional Feedback if this node evaluates to `true`
 * `FalseFeedback::MoodleText=""`                        : Additional Feedback if this node evaluates to `false`
 """
-function PRTNode(EvaluatedInput, Answer; Name="", AnswerTest=AlgebraicEquivalence, TrueScore=1.0, FalseScore=0.0, TrueNextNode=Nullable{PRTNode}(), FalseNextNode=Nullable{PRTNode}(), TrueFeedback=MoodleText(""), FalseFeedback=MoodleText(""))
-  return PRTNode(Name, AnswerTest, EvaluatedInput, Answer, TrueScore, FalseScore, TrueNextNode, FalseNextNode, TrueFeedback, FalseFeedback)
+function PRTNode(Tree, EvaluatedInput, Answer; Name="", AnswerTest=AlgebraicEquivalence, TrueScore=1.0, FalseScore=0.0, TrueNextNode=Nullable{PRTNode}(), FalseNextNode=Nullable{PRTNode}(), TrueFeedback=MoodleText(""), FalseFeedback=MoodleText(""))
+  this = PRTNode(Tree, Name, AnswerTest, EvaluatedInput, Answer, TrueScore, FalseScore, TrueNextNode, FalseNextNode, TrueFeedback, FalseFeedback)
+  push!(Tree.Nodes, this)
+  return this
 end
 
 type PRTree
@@ -279,9 +311,9 @@ Constructor for a Potential Response Tree, used by stack questions
 * `Value::Float32=1.0`                   : Value of the tree
 * `AutoSimplify::Int=1`                  : Whether entered values should be algebraically simplified
 """
-function PRTree(Nodes; Name="prt1", Value=1.0, AutoSimplify=1)
+function PRTree(;Nodes=[], Name="prt1", Value=1.0, AutoSimplify=1)
   # Assert all Nodes have distinct names
-""  # Otherwise enumerate the nodes
+  # Otherwise enumerate the nodes
   Names = Set(node.Name for node in Nodes)
   if length(Names) != length(Nodes)
     for (i, node) in enumerate(Nodes)
@@ -620,9 +652,6 @@ function exportXML(q::Quiz,filename)
   save_file(buildXML(q),filename);
 end
 
-##### TODO #####
-# - Parse PRT
-
 # Append a question to a XML document
 function appendXML(q::Question,node,doc)
   # add a question node
@@ -660,10 +689,14 @@ function appendXML(q::Question,node,doc)
     end
   end
   if q.Qtype == Stack 
+    appendXML(MoodleText(""), question, "questionvariables", doc)
+    appendXML(MoodleText(""), question, "questionnote", doc)
     for i in q.Inputs
       appendXML(i, question, doc)
     end
     if !isnull(q.ProblemResponseTree)
+      appendXML(MoodleText(
+        "[[feedback:$(q.ProblemResponseTree.value.Name)]]"), question, "specificfeedback", doc) 
       appendXML(q.ProblemResponseTree.value, question, doc)
     end
   end
@@ -746,41 +779,58 @@ function appendXML(input::StackInput, node, doc)
   appendXML(input.CheckAnswerType, input_node, "checkanswertype", doc)
   appendXML(input.MustVerify, input_node, "mustverify", doc)
   appendXML(input.ShowValidation, input_node, "showvalidation", doc)
-  appendXML(input.Options, input_node, "options", doc)end
-
-function appendXML(prt::PRTree, node, doc)
-  tree_node = new_child(node, "prt")
-  # Append Tree Information
-  appendXML(prt.Name, tree_node, "name", doc)
-  appendXML(prt.Value, tree_node, "value", doc)
-  appendXML(prt.AutoSimplify, tree_node, "autosimplif", doc)
-  for prtnode in prt.Nodes
-    appendXML(prtnode, tree_node, doc) 
-  end
+  appendXML(input.Options, input_node, "options", doc)
 end
 
 function appendXML(prtnode::PRTNode, node, doc)
   xml = new_child(node, "node")
   appendXML(prtnode.Name, xml, "name", doc)
-  appendXML(string(prtnode.AnswerTest), xml, "name", doc)
+  appendXML(AbstractString(prtnode.AnswerTest), xml, "answertest", doc)
   appendXML(prtnode.EvaluatedInput.Name, xml, "sans", doc)
   appendXML(prtnode.Answer, xml, "tans", doc)
   
+  appendXML(0, xml, "quiet", doc)
+  appendXML("=", xml, "truescoremode", doc)
   appendXML(prtnode.TrueScore, xml, "truescore", doc)
   if isnull(prtnode.TrueNextNode)
     appendXML(-1, xml, "truenextnode", doc)
+    appendXML(string(prtnode.Tree.Name, "-1-T"), xml, "trueanswernote", doc)
   else
     appendXML(prtnode.TrueNextNode.value.Name, xml, "truenextnode", doc)
+    appendXML("", xml, "trueanswernote", doc)
   end
   appendXML(prtnode.TrueFeedback, xml, "truefeedback", doc)
 
+  appendXML("=", xml, "falsescoremode", doc)
   appendXML(prtnode.FalseScore, xml, "falsescore", doc)
   if isnull(prtnode.FalseNextNode)
     appendXML(-1, xml, "falsenextnode", doc)
+    appendXML(string(prtnode.Tree.Name, "-1-F"), xml, "falseanswernote", doc)
   else
     appendXML(prtnode.FalseNextNode.value.Name, xml, "falsenextnode", doc)
+    appendXML(string(""), xml, "falseanswernote", doc)
   end
   appendXML(prtnode.FalseFeedback, xml, "falsefeedback", doc)
+end
+
+function appendXML(prt::PRTree, node, doc)
+  # Assert all Nodes have distinct names
+  # Otherwise enumerate the nodes
+  Names = Set(n.Name for n in prt.Nodes)
+  if length(Names) != length(prt.Nodes)
+    for (i, n) in enumerate(prt.Nodes)
+      n.Name = string(i)
+    end
+  end
+  tree_node = new_child(node, "prt")
+  # Append Tree Information
+  appendXML(prt.Name, tree_node, "name", doc)
+  appendXML(prt.Value, tree_node, "value", doc)
+  appendXML(prt.AutoSimplify, tree_node, "autosimplify", doc)
+  appendXML(MoodleText(""), tree_node, "feedbackvariables", doc)
+  for prtnode in prt.Nodes
+    appendXML(prtnode, tree_node, doc) 
+  end
 end
 
 " string input for avoiding the need to escape \\ "
