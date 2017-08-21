@@ -106,7 +106,7 @@ The check for correctness in Stack Questions can be any of the following
 
   Others are not tested or understood!
 """
-@enum StackAnswerTest AlgebraicEquivalenceCasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEqiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict
+@enum StackAnswerTest AlgebraicEquivalence CasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEquiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict 
 function convert(::Type{AbstractString}, x::StackAnswerTest)
   Dict(
     AlgebraicEquivalence => "AlgEquiv",
