@@ -314,12 +314,6 @@ Constructor for a Potential Response Tree, used by stack questions
 function PRTree(;Nodes=[], Name="prt1", Value=1.0, AutoSimplify=1)
   # Assert all Nodes have distinct names
   # Otherwise enumerate the nodes
-  Names = Set(node.Name for node in Nodes)
-  if length(Names) != length(Nodes)
-    for (i, node) in enumerate(Nodes)
-      node.Name = string(i)
-    end
-  end
   return PRTree(Nodes, Name, Value, AutoSimplify)
 end
 
@@ -817,7 +811,7 @@ function appendXML(prt::PRTree, node, doc)
   # Assert all Nodes have distinct names
   # Otherwise enumerate the nodes
   Names = Set(n.Name for n in prt.Nodes)
-  if length(Names) != length(prt.Nodes)
+  if ("" in Names) | (length(Names) != length(prt.Nodes))
     for (i, n) in enumerate(prt.Nodes)
       n.Name = string(i)
     end
