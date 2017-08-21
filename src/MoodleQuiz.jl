@@ -106,7 +106,7 @@ The check for correctness in Stack Questions can be any of the following
 
   Others are not tested or understood!
 """
-@enum StackAnswerTest AlgebraicEquivalenceCasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEqiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict 
+@enum StackAnswerTest AlgebraicEquivalenceCasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEqiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict
 function convert(::Type{AbstractString}, x::StackAnswerTest)
   Dict(
     AlgebraicEquivalence => "AlgEquiv",
@@ -179,7 +179,7 @@ end
 Creates the neccessary code to embed a file in to a `MoodleText`. Currently only works for HTML format.
 """
 EmbedFile(mf::MoodleFile;width="100%",height="100%") =
-  string("<img src=\"@@PLUGINFILE@@/",mf.Name,"\" alt=\"\" width=\"$width\" height=\"$height\" role=\"presentation\" style=\"vertical-align:text-bottom; margin: 0 .5em;\" class=\"img-responsive\">")
+  string("<img src=\"@@PLUGINFILE@@/",mf.Name,"\" alt=\"\" role=\"presentation\" style=\"width: $width; height: $height; vertical-align:text-bottom; margin: 0 .5em;\" class=\"img-responsive\">")
 
 """
     MoodleText(string,format=HTML)
