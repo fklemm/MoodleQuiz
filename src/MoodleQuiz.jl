@@ -106,7 +106,7 @@ The check for correctness in Stack Questions can be any of the following
 
   Others are not tested or understood!
 """
-@enum StackAnswerTest AlgebraicEquivalenceCasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEqiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict 
+@enum StackAnswerTest AlgebraicEquivalence CasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEquiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict 
 function convert(::Type{AbstractString}, x::StackAnswerTest)
   Dict(
     AlgebraicEquivalence => "AlgEquiv",
@@ -179,7 +179,7 @@ end
 Creates the neccessary code to embed a file in to a `MoodleText`. Currently only works for HTML format.
 """
 EmbedFile(mf::MoodleFile;width="100%",height="100%") =
-  string("<img src=\"@@PLUGINFILE@@/",mf.Name,"\" alt=\"\" width=\"$width\" height=\"$height\" role=\"presentation\" style=\"vertical-align:text-bottom; margin: 0 .5em;\" class=\"img-responsive\">")
+  string("<img src=\"@@PLUGINFILE@@/",mf.Name,"\" alt=\"\" role=\"presentation\" style=\"width: $width; height: $height; vertical-align:text-bottom; margin: 0 .5em;\" class=\"img-responsive\">")
 
 """
     MoodleText(string,format=HTML)
@@ -314,12 +314,6 @@ Constructor for a Potential Response Tree, used by stack questions
 function PRTree(;Nodes=[], Name="prt1", Value=1.0, AutoSimplify=1)
   # Assert all Nodes have distinct names
   # Otherwise enumerate the nodes
-  Names = Set(node.Name for node in Nodes)
-  if length(Names) != length(Nodes)
-    for (i, node) in enumerate(Nodes)
-      node.Name = string(i)
-    end
-  end
   return PRTree(Nodes, Name, Value, AutoSimplify)
 end
 
@@ -817,7 +811,7 @@ function appendXML(prt::PRTree, node, doc)
   # Assert all Nodes have distinct names
   # Otherwise enumerate the nodes
   Names = Set(n.Name for n in prt.Nodes)
-  if length(Names) != length(prt.Nodes)
+  if ("" in Names) | (length(Names) != length(prt.Nodes))
     for (i, n) in enumerate(prt.Nodes)
       n.Name = string(i)
     end
