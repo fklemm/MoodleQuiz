@@ -106,7 +106,7 @@ The check for correctness in Stack Questions can be any of the following
 
   Others are not tested or understood!
 """
-@enum StackAnswerTest AlgebraicEquivalence CasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEquiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict 
+@enum StackAnswerTest AlgebraicEquivalence CasEqual CompSquare Diff EqualComAss Expanded FacForm IntEquiv LowestTerms GT GTE NumAbsolute NumDecPlaces NumRelative NumSigFigs PartFrac RegExp SameType SigFigsStrict SingleFrac StringEquiv StringSloppy SubstEquiv SysEquiv UnitsAbsolute UnitsRelative Units UnitsStrictAbsolute UnitsStrictRelative UnitsStrict
 function convert(::Type{AbstractString}, x::StackAnswerTest)
   Dict(
     AlgebraicEquivalence => "AlgEquiv",
@@ -245,7 +245,7 @@ end
 function convert(::Type{AbstractString}, x::StackInputType)
   return Dict(
     AlgebraicInput => "algebraic",
-  )[x] 
+  )[x]
 end
 
 function EmbedInput(x::StackInput)
@@ -627,13 +627,39 @@ function buildXML(q::Quiz)
   return xdoc
 end
 
+# create a Moodle XML document from list of quizes of different categories
+function buildXML(qvector::Vector{Quiz})
+  # create document and root node
+  xdoc = XMLDocument();
+  xroot = create_root(xdoc, "quiz");
+
+  # no category quizes at start 
+  for q in sort(qvector, by = x -> x.Category)
+  # Category
+    if q.Category != ""
+      qnode = new_child(xroot,"question");
+      set_attributes(qnode,Dict{Any,AbstractString}("type" => "category"));
+      cnode = new_child(qnode,"category");
+      tnode = new_child(cnode,"text");
+      add_text(tnode,string("\$course\$/", q.Category ));
+    end
+
+    # append questions
+    for q in q.Questions
+      appendXML(q,xroot,xdoc);
+    end
+  end
+  return xdoc
+end
+
 """
     exportXML(quiz)
 
 returns a string with the quiz in Moodle XML format
+a vector of  enables to assign different categories
 """
 # store the build XML document in a string of file
-function exportXML(q::Quiz)
+function exportXML(q::Union{Quiz,Vector{Quiz}})
   s = string(buildXML(q))
 end
 
@@ -641,8 +667,9 @@ end
     exportXML(quiz,filename::AbstractString)
 
 writes the quiz in Moodle XML format to the given file
+a vector of  enables to assign different categories
 """
-function exportXML(q::Quiz,filename)
+function exportXML(q::Union{Quiz,Vector{Quiz}},filename)
   save_file(buildXML(q),filename);
 end
 
@@ -682,7 +709,7 @@ function appendXML(q::Question,node,doc)
       appendXML(answer,question,doc);
     end
   end
-  if q.Qtype == Stack 
+  if q.Qtype == Stack
     appendXML(MoodleText(""), question, "questionvariables", doc)
     appendXML(MoodleText(""), question, "questionnote", doc)
     for i in q.Inputs
@@ -690,7 +717,7 @@ function appendXML(q::Question,node,doc)
     end
     if !isnull(q.ProblemResponseTree)
       appendXML(MoodleText(
-        "[[feedback:$(q.ProblemResponseTree.value.Name)]]"), question, "specificfeedback", doc) 
+        "[[feedback:$(q.ProblemResponseTree.value.Name)]]"), question, "specificfeedback", doc)
       appendXML(q.ProblemResponseTree.value, question, doc)
     end
   end
@@ -759,7 +786,7 @@ end
 function appendXML(input::StackInput, node, doc)
   input_node = new_child(node, "input")
   appendXML(input.Name, input_node, "name", doc)
-  appendXML(AbstractString(input.Type), input_node, "type", doc) 
+  appendXML(AbstractString(input.Type), input_node, "type", doc)
   appendXML(input.TrueAnswer, input_node, "tans", doc)
   appendXML(input.BoxSize, input_node, "boxsize", doc)
   appendXML(input.StrictSyntax, input_node, "strictsyntax", doc)
@@ -782,7 +809,7 @@ function appendXML(prtnode::PRTNode, node, doc)
   appendXML(AbstractString(prtnode.AnswerTest), xml, "answertest", doc)
   appendXML(prtnode.EvaluatedInput.Name, xml, "sans", doc)
   appendXML(prtnode.Answer, xml, "tans", doc)
-  
+
   appendXML(0, xml, "quiet", doc)
   appendXML("=", xml, "truescoremode", doc)
   appendXML(prtnode.TrueScore, xml, "truescore", doc)
@@ -823,7 +850,7 @@ function appendXML(prt::PRTree, node, doc)
   appendXML(prt.AutoSimplify, tree_node, "autosimplify", doc)
   appendXML(MoodleText(""), tree_node, "feedbackvariables", doc)
   for prtnode in prt.Nodes
-    appendXML(prtnode, tree_node, doc) 
+    appendXML(prtnode, tree_node, doc)
   end
 end
 
