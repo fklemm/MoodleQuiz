@@ -9,7 +9,7 @@ import Base.Random: uuid1, UUID
 
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
 export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice, Stack
-export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, TrueFalseEmbeddedAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal
+export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, TrueFalseEmbeddedAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal, DragAndDropOption
 export MatrixEmbeddedAnswer
 export MoodleFile, EmbedFile
 export StackInput, StackAnswerTest, PRTree, PRTNode, EmbedInput
@@ -159,6 +159,10 @@ function MoodleFile(filename::AbstractString)
   else
     error("File ", filename, " does not exist.");
   end
+end
+
+function MoodleFile(name, io::Base.IOBuffer)
+  return MoodleFile(name, "/", read(io));
 end
 
 function MoodleFile(plot::Any)
@@ -318,6 +322,20 @@ function PRTree(;Nodes=[], Name="prt1", Value=1.0, AutoSimplify=1)
 end
 
 
+type DragAndDropOption
+ Dropable:: Bool
+ DragText:: String
+ DropText:: String
+ DropPosition:: Nullable{Tuple{Float64,Float64}}
+ Group:: Integer
+ Image:: Nullable{MoodleFile}
+end
+
+function DragAndDropOption(Image:: MoodleFile, DragText:: AbstractString = ""; DropText:: AbstractString = "", DropPosition = Nullable{Tuple{Float64,Float64}}(), Group:: Integer = 1)
+ isDropable = !isnull(DropPosition)
+ return DragAndDropOption(isDropable,DragText, DropText, DropPosition, Group, Image)
+end
+
 type Question
   Qtype::QuestionType
   Name::MoodleText
@@ -335,6 +353,8 @@ type Question
   Answers::Vector{Answer}
   Inputs::Vector{StackInput}
   ProblemResponseTree::Nullable{PRTree}
+  DragAndDropImage:: Nullable{MoodleFile}
+  DragAndDropOptions:: Array{DragAndDropOption}
 end
 
 """
@@ -356,9 +376,10 @@ Contstructor for Question type using named parameters
 * `AnswerNumbering::String`="none" : decides how answers of questions should be labeled, e.g. 1. 2. ... or a),b) ... Labels are disabled by default.
 * `Answers::Answer=[]`             : `Answer`s for this question
 """
-function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.", IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,Single=true,ShuffleAnswers=true,AnswerNumbering="none",Answers=[],Inputs=[], ProblemResponseTree=Nullable{PRTree}())
-  return Question(qtype,Name,Text,GeneralFeedback,CorrectFeedback,PartiallyCorrectFeedback,IncorrectFeedback,Penalty,DefaultGrade,Hidden,Single,ShuffleAnswers,AnswerNumbering,Answers,Inputs,ProblemResponseTree)
+function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.", IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,Single=true,ShuffleAnswers=true,AnswerNumbering="none",Answers=[],Inputs=[], ProblemResponseTree=Nullable{PRTree}(), DragAndDropImage = Nullable{MoodleFile}(), DragAndDropOptions:: Array{DragAndDropOption}=DragAndDropOptions[])
+  return Question(qtype,Name,Text,GeneralFeedback,CorrectFeedback,PartiallyCorrectFeedback,IncorrectFeedback,Penalty,DefaultGrade,Hidden,Single,ShuffleAnswers,AnswerNumbering,Answers,Inputs,ProblemResponseTree,DragAndDropImage, DragAndDropOptions)
 end
+
 
 """
     Answer(text; optional arguments)
@@ -423,6 +444,9 @@ Contstructor for EmbeddedAnswer type using named parameters
 function EmbeddedAnswer(Type;Grade=1,AnswerOptions=[])
     return EmbeddedAnswer(Type,Grade,AnswerOptions);
 end
+
+
+
 
 
 """
@@ -547,6 +571,7 @@ function MatrixEmbeddedAnswer(A;Grade=1,Tolerance=0.1,Feedback="",InputSize=0,Na
 end
 
 
+
 convert(::Type{AbstractString},ia::EmbeddedAnswer) = string('{',ia.Grade,":",convert(AbstractString,ia.Type),":",convert(AbstractString,ia.AnswerOptions),'}')
 
 convert(::Type{AbstractString},iao::EmbeddedAnswerOption) = (
@@ -633,7 +658,7 @@ function buildXML(qvector::Vector{Quiz})
   xdoc = XMLDocument();
   xroot = create_root(xdoc, "quiz");
 
-  # no category quizes at start 
+  # no category quizes at start
   for q in sort(qvector, by = x -> x.Category)
   # Category
     if q.Category != ""
@@ -704,7 +729,7 @@ function appendXML(q::Question,node,doc)
     appendXML(Answer(MoodleText("false",MoodleAutoFormat)),question,doc);
   end
   # append Answers
-  if q.Qtype != EmbeddedAnswers && q.Qtype != Stack
+  if q.Qtype != EmbeddedAnswers && q.Qtype != Stack  && q.Qtype != DragAndDrop
     for answer in q.Answers
       appendXML(answer,question,doc);
     end
@@ -721,6 +746,15 @@ function appendXML(q::Question,node,doc)
       appendXML(q.ProblemResponseTree.value, question, doc)
     end
   end
+  if q.Qtype == DragAndDrop
+     if !isnull(q.DragAndDropImage)
+       insertXML(get(q.DragAndDropImage), question, doc);
+     end
+     for (i,o) in enumerate(q.DragAndDropOptions)
+       appendXML(o,i,question,doc);
+     end
+
+  end
 end
 
 # Append an answer to a XML document
@@ -732,11 +766,51 @@ function appendXML(a::Answer,node,doc)
   appendXML(a.Feedback,answer,"feedback",doc);
 end
 
+# Append an DragAndDropGroup to a XML document
+function appendXML(o::DragAndDropOption, optionnumber:: Integer, node,doc)
+    drag  = new_child(node,"drag");
+    text = new_child(drag,"text");
+    add_text(text,o.DragText);
+    no = new_child(drag,"no");
+    add_text(no,string(optionnumber));
+    draggroup = new_child(drag,"draggroup");
+    add_text(draggroup, string(o.Group));
+
+    if !isnull(o.Image)
+       insertXML(get(o.Image), drag, doc)
+    end
+
+    if o.Dropable
+       drop  = new_child(node,"drop");
+       pos:: Tuple{Float64,Float64} = get(o.DropPosition)
+       text = new_child(drop,"text");
+       add_text(text,o.DropText);
+       no = new_child(drop,"no");
+       add_text(no,string(optionnumber));
+       choice = new_child(drop,"choice");
+       add_text(choice,string(optionnumber));
+       xleft = new_child(drop,"xleft");
+       add_text(xleft,string(pos[1]));
+       ytop = new_child(drop,"ytop");
+       add_text(ytop,string(pos[2]));
+
+    end
+
+end
+
+
 # Append a Moodle text to a XML document
 function appendXML(t::MoodleText,node,TagName::AbstractString,doc)
   # create node
   child = new_child(node,TagName);
   insertXML(t,child,doc);
+end
+
+# insert a Moodle File into a given node
+function insertXML(file::MoodleFile,node,doc)
+  child = new_child(node,"file");
+  set_attributes(child,Dict{Any,AbstractString}("name" => file.Name,"path" => file.Path,"encoding" => "base64"));
+  add_text(child,base64encode(file.Data));
 end
 
 # Insert a Moodle text into a given node
@@ -748,9 +822,7 @@ function insertXML(t::MoodleText,node,doc)
     add_cdata(doc,text,t.Text);
     # add embedded files
     for file in t.Files
-      child = new_child(node,"file");
-      set_attributes(child,Dict{Any,AbstractString}("name" => file.Name,"path" => file.Path,"encoding" => "base64"));
-      add_text(child,base64encode(file.Data));
+       insertXML(t,node)
     end
   else
     add_text(text,t.Text);
