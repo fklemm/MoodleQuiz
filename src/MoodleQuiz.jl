@@ -822,7 +822,7 @@ function insertXML(t::MoodleText,node,doc)
     add_cdata(doc,text,t.Text);
     # add embedded files
     for file in t.Files
-       insertXML(t,node)
+       insertXML(file,node,doc)
     end
   else
     add_text(text,t.Text);
