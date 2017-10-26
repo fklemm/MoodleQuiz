@@ -376,7 +376,7 @@ Contstructor for Question type using named parameters
 * `AnswerNumbering::String`="none" : decides how answers of questions should be labeled, e.g. 1. 2. ... or a),b) ... Labels are disabled by default.
 * `Answers::Answer=[]`             : `Answer`s for this question
 """
-function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.", IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,Single=true,ShuffleAnswers=true,AnswerNumbering="none",Answers=[],Inputs=[], ProblemResponseTree=Nullable{PRTree}(), DragAndDropImage = Nullable{MoodleFile}(), DragAndDropOptions:: Array{DragAndDropOption}=DragAndDropOptions[])
+function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.", IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,Single=true,ShuffleAnswers=true,AnswerNumbering="none",Answers=[],Inputs=[], ProblemResponseTree=Nullable{PRTree}(), DragAndDropImage = Nullable{MoodleFile}(), DragAndDropOptions:: Array{DragAndDropOption}=DragAndDropOption[])
   return Question(qtype,Name,Text,GeneralFeedback,CorrectFeedback,PartiallyCorrectFeedback,IncorrectFeedback,Penalty,DefaultGrade,Hidden,Single,ShuffleAnswers,AnswerNumbering,Answers,Inputs,ProblemResponseTree,DragAndDropImage, DragAndDropOptions)
 end
 
