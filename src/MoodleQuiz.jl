@@ -8,7 +8,7 @@ import Base.show
 import Base.Random: uuid1, UUID
 
 export QuestionType, Question, Answer, MoodleText, MoodleTextFormat, Quiz, TrueFalseAnswer, exportXML, @M_str, @M_mstr
-export MultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice, Stack
+export MultipleChoice, WeightedMultipleChoice, TrueFalse, ShortAnswer, Matching, EmbeddedAnswers, Essay, Numerical, Description, CalculatedSimple, DragAndDrop, DragAndDropMatch, AllOrNothingMultipleChoice, Stack
 export NumericalEmbeddedAnswer, EmbeddedAnswer, EmbeddedAnswerOption, ShortAnswerCaseInsensitive, ShortAnswerCaseSensitive, NumericalAnswer, TrueFalseEmbeddedAnswer, MultipleChoiceSelect, MultipleChoiceVertical, MultipleChoiceHorizontal, DragAndDropOption
 export MatrixEmbeddedAnswer
 export MoodleFile, EmbedFile
@@ -21,6 +21,7 @@ Moodle supports the following types of questions
  Type                        | Description
  :---------------------------| :---------------------------------------------------------------------------------------------------------
  MultipleChoice              | standard multiple choice question
+ WeightedMultipleChoice      | Multiple choice with weighted grades for answers by their fractions; careful: moodle only allows certain fractions (1/n for n= 1,...,10,20 and some multiples...)
  AllOrNothingMultipleChoice  | multiple choice question, where all correct and no false answers have to be selected to recieve any points
  TrueFalse                   | simple yes / no question
  ShortAnswer                 | not yet implemented
@@ -34,11 +35,12 @@ Moodle supports the following types of questions
  DragAndDropMatch            | not yet implemented
  Stack                       | Uses the Maxima CAS engine to check algebraic correctness of solution
 """
-@enum QuestionType MultipleChoice TrueFalse ShortAnswer Matching EmbeddedAnswers Essay Numerical Description CalculatedSimple DragAndDrop DragAndDropMatch AllOrNothingMultipleChoice Stack
+@enum QuestionType MultipleChoice WeightedMultipleChoice TrueFalse ShortAnswer Matching EmbeddedAnswers Essay Numerical Description CalculatedSimple DragAndDrop DragAndDropMatch AllOrNothingMultipleChoice Stack
 convert(::Type{AbstractString},x::QuestionType) = (
    Dict(
     # MultipleChoice => "multichoice",
     MultipleChoice => "oumultiresponse",
+    WeightedMultipleChoice => "multichoice",
     AllOrNothingMultipleChoice => "multichoiceset",
     TrueFalse => "truefalse",
     ShortAnswer => "shortanswer",
@@ -257,7 +259,7 @@ function EmbedInput(x::StackInput)
 end
 
 type Answer
-  Fraction::Int
+  Fraction::AbstractFloat
   Text::MoodleText
   Feedback::MoodleText
 end
@@ -371,12 +373,15 @@ Contstructor for Question type using named parameters
 * `DefaultGrade::Int=1`            : not sure ... probably points awarded if the question is answered correctly in the first attempt
 * `Penalty::Float32=1/3`           : not sure ... probably the points awarded for a correct answer is calculated by `DefaultGrade * Penalty` if the student failed to provide the correct answer in the first attempt
 * `Hidden::Int=0`                  : not sure ... maybe hidden questions cannot be seen by students?
-* `Single::Bool=true`              : not sure ... not idea
+* `Single::Bool=true`              : not sure ... not idea, by default false for WeightedMultipleChoice
 * `ShuffleAnswers::Bool=true`      : decides if answers of questions will be randomly shuffled by Moodle
 * `AnswerNumbering::String`="none" : decides how answers of questions should be labeled, e.g. 1. 2. ... or a),b) ... Labels are disabled by default.
 * `Answers::Answer=[]`             : `Answer`s for this question
 """
-function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.", IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,Single=true,ShuffleAnswers=true,AnswerNumbering="none",Answers=[],Inputs=[], ProblemResponseTree=Nullable{PRTree}(), DragAndDropImage = Nullable{MoodleFile}(), DragAndDropOptions:: Array{DragAndDropOption}=DragAndDropOption[])
+function Question(qtype::QuestionType; Name="", Text="",GeneralFeedback="",CorrectFeedback="Die Antwort ist richtig.",PartiallyCorrectFeedback="Die Antwort ist teilweise richtig.",
+ IncorrectFeedback="Die Antwort ist falsch.",Penalty=1/3,DefaultGrade=1,Hidden=0,
+ Single=(qtype in [WeightedMultipleChoice]) ? false : true,
+ ShuffleAnswers=true,AnswerNumbering="none",Answers=[],Inputs=[], ProblemResponseTree=Nullable{PRTree}(), DragAndDropImage = Nullable{MoodleFile}(), DragAndDropOptions:: Array{DragAndDropOption}=DragAndDropOption[])
   return Question(qtype,Name,Text,GeneralFeedback,CorrectFeedback,PartiallyCorrectFeedback,IncorrectFeedback,Penalty,DefaultGrade,Hidden,Single,ShuffleAnswers,AnswerNumbering,Answers,Inputs,ProblemResponseTree,DragAndDropImage, DragAndDropOptions)
 end
 
@@ -392,7 +397,7 @@ Contstructor for Question type using named parameters
 * `Feedback::MoodleText=""` : this text is always shown after the question has been answered
 """
 function Answer(Text;Fraction=100,Correct=1,Feedback="")
-  return Answer(Fraction * Correct,Text,Feedback)
+  return Answer( min(Fraction * Correct, Fraction),Text,Feedback)
 end
 
 """
@@ -409,7 +414,7 @@ end
 
 type EmbeddedAnswerOption
   Text::AbstractString
-  Fraction::Int
+  Fraction::AbstractFloat
   Feedback::AbstractString
 end
 """
@@ -419,10 +424,10 @@ Contstructor for an embedded answer option using named parameters
 # Arguments
 * `Text::AbstractString=""`     : text containing the answert option
 * `Correct::Int=1`              : shortcut for setting whether this answer option is correct or not
-* `Fraction::Int=100`           : `Fraction * Correct /100 * (DefaultGrade of Question)` Points are awarded to the student if this answer is chosen
+* `Fraction::Float=100`           : `Fraction * Correct /100 * (DefaultGrade of Question)` Points are awarded to the student if this answer is chosen
 * `Feedback::AbstractString=""` : text shown to the user has chosen this answer option
 """
-function EmbeddedAnswerOption(Text;Correct=1,Fraction=100,Feedback="")
+function EmbeddedAnswerOption(Text;Correct=1,Fraction=100.0,Feedback="")
     return EmbeddedAnswerOption(Text,Correct*Fraction,Feedback);
 end
 
