@@ -393,10 +393,13 @@ Contstructor for Question type using named parameters
 # Arguments
 * `Text::MoodleText=""`     : text containing the actual question
 * `Correct::Int=1`          : shortcut for setting wether this answer is correct or not
-* `Fraction::Int=100`       : `Fraction * Correct /100 * (DefaultGrade of Question)` Points are awarded to the student if this answer is chosen
+* `Fraction::Float=100.0`       : `Fraction * Correct /100 * (DefaultGrade of Question)` Points are awarded to the student if this answer is chosen
 * `Feedback::MoodleText=""` : this text is always shown after the question has been answered
 """
-function Answer(Text;Fraction=100,Correct=1,Feedback="")
+function Answer(Text;Fraction=100.0,Correct=1,Feedback="")
+  if typeof(Fraction) <: Int
+    Fraction = Float64(Fraction)
+  end
   return Answer( min(Fraction * Correct, Fraction),Text,Feedback)
 end
 
@@ -428,6 +431,9 @@ Contstructor for an embedded answer option using named parameters
 * `Feedback::AbstractString=""` : text shown to the user has chosen this answer option
 """
 function EmbeddedAnswerOption(Text;Correct=1,Fraction=100.0,Feedback="")
+  if typeof(Fraction) <: Int
+    Fraction = Float64(Fraction)
+   end
     return EmbeddedAnswerOption(Text,Correct*Fraction,Feedback);
 end
 
@@ -580,7 +586,7 @@ end
 convert(::Type{AbstractString},ia::EmbeddedAnswer) = string('{',ia.Grade,":",convert(AbstractString,ia.Type),":",convert(AbstractString,ia.AnswerOptions),'}')
 
 convert(::Type{AbstractString},iao::EmbeddedAnswerOption) = (
-  string( "%",iao.Fraction,"%", iao.Text, "#", iao.Feedback)
+  string( "%",round(Int64,iao.Fraction),"%", iao.Text, "#", iao.Feedback)
 )
 
 convert(::Type{AbstractString},iaov::Vector{EmbeddedAnswerOption}) = (
