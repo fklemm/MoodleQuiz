@@ -244,7 +244,7 @@ Contstructor for StackInput type using named parameters.
 * `ShowValidation::Int=1`          : 0: don‘t show, 1: Show, 2: Show without variable list
 * `Options::AbstractString=""`     : Maths formatting options – Not yet implemented
 """
-function StackInput(Type::StackInputType, Name::AbstractString, TrueAnswer::AbstractString; BoxSize::Int=100, StrictSyntax::Int=1, InsertStars::Int=0, SyntaxHint::AbstractString="", SyntaxAttribute::Int=0, ForbidWords::AbstractString="", AllowWords::AbstractString="", ForbidFloat::Int=1, RequireLowestTerms::Int=0, CheckAnswerType::Int=0, MustVerify::Int=1, ShowValidation::Int=1, Options::AbstractString="")
+function StackInput(Type::StackInputType, Name::AbstractString, TrueAnswer::AbstractString; BoxSize::Int=15, StrictSyntax::Int=1, InsertStars::Int=0, SyntaxHint::AbstractString="", SyntaxAttribute::Int=0, ForbidWords::AbstractString="", AllowWords::AbstractString="", ForbidFloat::Int=1, RequireLowestTerms::Int=0, CheckAnswerType::Int=0, MustVerify::Int=1, ShowValidation::Int=1, Options::AbstractString="")
   return StackInput(Type, Name, TrueAnswer, BoxSize, StrictSyntax, InsertStars, SyntaxHint, SyntaxAttribute, ForbidWords, AllowWords, ForbidFloat, RequireLowestTerms, CheckAnswerType, MustVerify, ShowValidation, Options)
 end
 
@@ -255,7 +255,7 @@ function convert(::Type{AbstractString}, x::StackInputType)
 end
 
 function EmbedInput(x::StackInput)
-  return string("<p>[[input:", x.Name, "]] [[validation:", x.Name, "]]</p>")
+  return string("[[input:", x.Name, "]] [[validation:", x.Name, "]]")
 end
 
 type Answer
@@ -276,6 +276,8 @@ type PRTNode
   FalseNextNode::Nullable{PRTNode}
   TrueFeedback::MoodleText
   FalseFeedback::MoodleText
+  TrueScoreMode::AbstractString
+  FalseScoreMode::AbstractString
 end
 
 """
@@ -293,9 +295,11 @@ Constructor for a Potential Response Tree Node, used by stack questions
 * `FalseNextNode::Nullable{PRTNode}=NULL`               : The next node if this node evaluates to `false`, null if the tree should terminate
 * `TrueFeedback::MoodleText=""`                         : Additional Feedback if this node evaluates to `true`
 * `FalseFeedback::MoodleText=""`                        : Additional Feedback if this node evaluates to `false`
+* `TrueScoreMode::AbstractString="="`                   : How the total score is modified if `true`: "=" sets the score to TrueScore, "+" adds to the score, "-" subtracts
+* `FalseScoreMode::AbstractString="="`                  : How the total score is modified if `true`: "=" sets the score to TrueScore, "+" adds to the score, "-" subtracts
 """
-function PRTNode(Tree, EvaluatedInput, Answer; Name="", AnswerTest=AlgebraicEquivalence, TrueScore=1.0, FalseScore=0.0, TrueNextNode=Nullable{PRTNode}(), FalseNextNode=Nullable{PRTNode}(), TrueFeedback=MoodleText(""), FalseFeedback=MoodleText(""))
-  this = PRTNode(Tree, Name, AnswerTest, EvaluatedInput, Answer, TrueScore, FalseScore, TrueNextNode, FalseNextNode, TrueFeedback, FalseFeedback)
+function PRTNode(Tree, EvaluatedInput, Answer; Name="", AnswerTest=AlgebraicEquivalence, TrueScore=1.0, FalseScore=0.0, TrueNextNode=Nullable{PRTNode}(), FalseNextNode=Nullable{PRTNode}(), TrueFeedback=MoodleText(""), FalseFeedback=MoodleText(""), TrueScoreMode="=", FalseScoreMode="=")
+  this = PRTNode(Tree, Name, AnswerTest, EvaluatedInput, Answer, TrueScore, FalseScore, TrueNextNode, FalseNextNode, TrueFeedback, FalseFeedback, TrueScoreMode, FalseScoreMode)
   push!(Tree.Nodes, this)
   return this
 end
@@ -894,7 +898,7 @@ function appendXML(prtnode::PRTNode, node, doc)
   appendXML(prtnode.Answer, xml, "tans", doc)
 
   appendXML(0, xml, "quiet", doc)
-  appendXML("=", xml, "truescoremode", doc)
+  appendXML(prtnode.TrueScoreMode, xml, "truescoremode", doc)
   appendXML(prtnode.TrueScore, xml, "truescore", doc)
   if isnull(prtnode.TrueNextNode)
     appendXML(-1, xml, "truenextnode", doc)
@@ -905,7 +909,7 @@ function appendXML(prtnode::PRTNode, node, doc)
   end
   appendXML(prtnode.TrueFeedback, xml, "truefeedback", doc)
 
-  appendXML("=", xml, "falsescoremode", doc)
+  appendXML(prtnode.FalseScoreMode, xml, "falsescoremode", doc)
   appendXML(prtnode.FalseScore, xml, "falsescore", doc)
   if isnull(prtnode.FalseNextNode)
     appendXML(-1, xml, "falsenextnode", doc)
